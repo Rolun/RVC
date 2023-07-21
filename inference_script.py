@@ -275,10 +275,10 @@ def semb_interpol(semb1, semb2, step, steps):
 # semb1 = np.load("1_embeddings.npy")
 # semb2 = np.load("2_embeddings.npy")
 # semb3 = np.load("3_embeddings.npy")
-# generate(semb0, function="infer_semb", output_path="test_0.wav")
-# generate(semb1, function="infer_semb", output_path="test_1.wav")
-# generate(semb2, function="infer_semb", output_path="test_2.wav")
-# generate(semb3, function="infer_semb", output_path="test_3.wav")
+# generate(semb0, function="infer_semb", output_path="test_stuff/test_0.wav")
+# generate(semb1, function="infer_semb", output_path="test_stuff/test_1.wav")
+# generate(semb2, function="infer_semb", output_path="test_stuff/test_2.wav")
+# generate(semb3, function="infer_semb", output_path="test_stuff/test_3.wav")
 
 # male = (semb0 + semb1) / 2
 # female = (semb2 + semb3) / 2
@@ -310,20 +310,20 @@ def semb_interpol(semb1, semb2, step, steps):
 
 # for i in range(1, 109):
 #     generate(i, function="infer_sid", output_path=f"test_voices/test_{i}.wav")
-# generate(0, function="infer_sid", output_path="test_0.wav")
-# generate(1, function="infer_sid", output_path="test_1.wav")
-# generate(2, function="infer_sid", output_path="test_2.wav")
-# generate(3, function="infer_sid", output_path="test_3.wav")
+# generate(0, function="infer_sid", output_path="test_stuff/test_0.wav")
+# generate(1, function="infer_sid", output_path="test_stuff/test_1.wav")
+# generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
+# generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
 # generate(None, function="infer_d_vector")
-# generate(d_vector1, function="infer_semb", output_path="test_1.wav")
-# generate(d_vector2, function="infer_semb", output_path="test_2.wav")
-# generate(d_vector3, function="infer_semb", output_path="test_3.wav")
-# generate(d_vector4, function="infer_semb", output_path="test_4.wav")
-# generate(d_vector5, function="infer_semb", output_path="test_5.wav")
+# generate(d_vector1, function="infer_semb", output_path="test_stuff/test_1.wav")
+# generate(d_vector2, function="infer_semb", output_path="test_stuff/test_2.wav")
+# generate(d_vector3, function="infer_semb", output_path="test_stuff/test_3.wav")
+# generate(d_vector4, function="infer_semb", output_path="test_stuff/test_4.wav")
+# generate(d_vector5, function="infer_semb", output_path="test_stuff/test_5.wav")
 
 
 o_semb = np.load("embeddings/1_emb.npy")
 gen_semb = np.expand_dims(np.load("VAE/generated_emb_1.npy"),-1)
 
-generate(o_semb, function="infer_semb", output_path="test_0.wav")
-generate(gen_semb, function="infer_semb", output_path="test_1.wav")
+generate(o_semb, function="infer_semb", output_path="test_stuff/test_0.wav")
+generate(gen_semb, function="infer_semb", output_path="test_stuff/test_1.wav")
