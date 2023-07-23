@@ -246,14 +246,14 @@ class VC(object):
 
     def get_f0(
         self,
-        input_audio_path,
         x,
         p_len,
         f0_up_key,
         f0_method,
-        filter_radius,
         crepe_hop_length,
         inp_f0=None,
+        input_audio_path=None,
+        filter_radius=None
     ):
         global input_audio_path2wav
         time_step = self.window / self.sr * 1000
@@ -580,14 +580,14 @@ class VC(object):
         pitch, pitchf = None, None
         if if_f0 == 1:
             pitch, pitchf = self.get_f0(
-                input_audio_path,
                 audio_pad,
                 p_len,
                 f0_up_key,
                 f0_method,
-                filter_radius,
                 crepe_hop_length,
                 inp_f0,
+                input_audio_path,
+                filter_radius,
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
@@ -691,7 +691,6 @@ class VC(object):
         model,
         net_g,
         audio,
-        input_audio_path,
         times,
         f0_up_key,
         f0_method,
@@ -699,7 +698,6 @@ class VC(object):
         # file_big_npy,
         index_rate,
         if_f0,
-        filter_radius,
         tgt_sr,
         resample_sr,
         rms_mix_rate,
@@ -778,14 +776,14 @@ class VC(object):
         pitch, pitchf = None, None
         if if_f0 == 1:
             pitch, pitchf = self.get_f0(
-                input_audio_path,
                 audio_pad,
                 p_len,
                 f0_up_key,
                 f0_method,
-                filter_radius,
                 crepe_hop_length,
                 inp_f0,
+                input_audio_path=None,
+                filter_radius=None,
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
