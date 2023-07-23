@@ -764,10 +764,9 @@ class VC(object):
         if function=="infer_sid":
             sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         if function=="infer_semb":
-            semb = torch.tensor(semb, device=self.device)
+            semb = torch.tensor(semb, device=self.device).half()
             if len(semb.shape)<3:
                 semb = F.normalize(semb.unsqueeze(0)).unsqueeze(-1)
-            semb = semb.half()
         if function=="infer_inter":
             inter = torch.tensor(inter, device=self.device).half()
         if function=="get_inter":
