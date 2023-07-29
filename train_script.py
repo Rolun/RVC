@@ -478,15 +478,15 @@ def click_train(
 def main():
     use_d_vectors = False
     use_se_loss = False
-    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/Voices/Multi-speaker-training" #Trainingset folder
-    exp_dir1 = "merged_test" #Experiment name
+    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/VocalSet11Small" #Trainingset folder
+    exp_dir1 = "vocalset" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder
     np7 = 2 #Parallell processes
     f0method8 = "mangio-crepe" #Pitch extraction method
     save_epoch10 = 5 #Save frequency
-    total_epoch11 = 1 #Total epochs
+    total_epoch11 = 250 #Total epochs
     batch_size12 = 16 #Batch size
     if_save_latest13 = True #Save only the latest .ckpt file
     pretrained_G14 = "pretrained_v2/f0G40k.pth"
@@ -495,7 +495,7 @@ def main():
     if_cache_gpu17 = False #Cache all training sets to GPU memory
     if_save_every_weights18 = True #Save a small final model to the 'weights' folder at each save point
     version19 = "v2" #v1 or v2
-    extraction_crepe_hop_length = 128
+    extraction_crepe_hop_length = 64
 
     # preprocess_dataset(
     #     trainset_dir4, 
@@ -506,13 +506,13 @@ def main():
 
     # print("preprocess done")
 
-    # extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
+    extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
 
-    # print("feature extraction done")
+    print("feature extraction done")
 
-    # train_index(exp_dir1, version19)
+    train_index(exp_dir1, version19)
 
-    # print("index trained")
+    print("index trained")
 
     click_train(
         exp_dir1,

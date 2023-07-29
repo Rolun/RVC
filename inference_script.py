@@ -6,6 +6,8 @@ import sys
 import torch
 from multiprocessing import cpu_count
 import numpy as np
+import time
+
 class Config:
     def __init__(self,device,is_half):
         self.device = device
@@ -119,7 +121,30 @@ def vc_single(input_audio, f0_up_key, f0_file, f0_method, file_index, index_rate
         semb = d_vector
         
     # audio_opt=vc.pipeline(hubert_model,net_g,sid,audio,times,f0_up_key,f0_method,file_index,file_big_npy,index_rate,if_f0,f0_file=f0_file)
-    audio_opt=vc.pipeline2(hubert_model,net_g,audio,input_audio,times,f0_up_key,f0_method,file_index,index_rate,if_f0,filter_radius,tgt_sr,resample_sr,rms_mix_rate,version,protect,crepe_hop_length,f0_file=f0_file,sid=sid,semb=semb,inter=inter,function=function)
+    audio_opt=vc.pipeline2(
+        model = hubert_model,
+        net_g = net_g,
+        audio = audio,
+        times = times,
+        f0_up_key = f0_up_key,
+        f0_method = f0_method,
+        file_index = file_index,
+        index_rate = index_rate,
+        if_f0 = if_f0,
+        tgt_sr = tgt_sr,
+        resample_sr = resample_sr,
+        rms_mix_rate = rms_mix_rate,
+        version = version,
+        protect = protect,
+        crepe_hop_length = crepe_hop_length,
+        f0_file=f0_file,
+        sid=sid,
+        semb=semb,
+        inter=inter,
+        function=function,
+        input_audio=input_audio,
+        filter_radius=filter_radius
+    )
     print(times)
     return audio_opt
 
@@ -155,8 +180,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/merged_test.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/Record_(online-voice-recorder.com).mp3"
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/109-voices.pth" #merged3_e185_s8880.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/download.mp3" #"C:/Users/lundb/Documents/Other/Music/Martin_recordings/Record_(online-voice-recorder.com).mp3"
 f0method = "crepe"#"mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro/added_IVF789_Flat_nprobe_1_aloe_v2.index"
 index_rate = 0#0.7
@@ -237,6 +262,7 @@ def generate(inp, function="infer_sid", f0up_key = 0, output_path = "test.wav"):
         wav_opt=vc_single(input_path,f0up_key,f0_file,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,inter=inp,function="infer_inter")
     if function == "infer_d_vector":
         wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,function="infer_d_vector")
+    # import pdb; pdb.set_trace()
     wavfile.write(output_path, tgt_sr, wav_opt)
 
 
@@ -308,9 +334,9 @@ def semb_interpol(semb1, semb2, step, steps):
 # d_vector4 = np.load("d_vector_4.npy")
 # d_vector5 = np.load("d_vector_5.npy")
 
-# for i in range(1, 109):
-#     generate(i, function="infer_sid", output_path=f"test_voices/test_{i}.wav")
-# generate(0, function="infer_sid", output_path="test_stuff/test_0.wav")
+for i in range(1, 109, 9):
+    generate(i, function="infer_sid", output_path=f"test_stuff/test_{i}.wav")
+# generate(0, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(1, function="infer_sid", output_path="test_stuff/test_1.wav")
 # generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
@@ -322,8 +348,9 @@ def semb_interpol(semb1, semb2, step, steps):
 # generate(d_vector5, function="infer_semb", output_path="test_stuff/test_5.wav")
 
 
-o_semb = np.load("embeddings/1_emb.npy")
-gen_semb = np.expand_dims(np.load("VAE/generated_emb_1.npy"),-1)
+# o_semb = np.load("embeddings/1_emb.npy")
+# gen_semb = np.expand_dims(np.load("VAE/generated_emb_1.npy"),-1)
 
-generate(o_semb, function="infer_semb", output_path="test_stuff/test_0.wav")
-generate(gen_semb, function="infer_semb", output_path="test_stuff/test_1.wav")
+# generate(o_semb, function="infer_semb", output_path="test_stuff/test_0.wav")
+# generate(gen_semb, function="infer_semb", output_path="test_stuff/test_1.wav")
+

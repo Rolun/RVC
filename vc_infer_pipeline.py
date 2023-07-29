@@ -42,14 +42,11 @@ def change_rms(data1, sr1, data2, sr2, rate):  # 1是输入音频，2是输出�
     ).squeeze()
     rms2 = torch.max(rms2, torch.zeros_like(rms2) + 1e-6)
 
-    data2_tmp = data2.copy()
-
     data2 *= (
         torch.pow(rms1, torch.tensor(1 - rate))
         * torch.pow(rms2, torch.tensor(rate - 1))
     ).numpy()
 
-    # import pdb; pdb.set_trace()
     return data2
 
 
@@ -708,7 +705,9 @@ class VC(object):
         sid=None,
         semb=None,
         inter=None,
-        function="sid_inf"
+        function="sid_inf",
+        input_audio=None,
+        filter_radius=None,
     ):
         if (
             file_index != ""
@@ -782,8 +781,8 @@ class VC(object):
                 f0_method,
                 crepe_hop_length,
                 inp_f0,
-                input_audio_path=None,
-                filter_radius=None,
+                input_audio_path=input_audio,
+                filter_radius=filter_radius,
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
