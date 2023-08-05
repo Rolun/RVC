@@ -7,6 +7,7 @@ import torch
 from multiprocessing import cpu_count
 import numpy as np
 import time
+import json
 
 class Config:
     def __init__(self,device,is_half):
@@ -180,11 +181,11 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/109-voices.pth" #merged3_e185_s8880.pth
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/mixed_dataset_e155_s18135.pth" #merged3_e185_s8880.pth
 input_path = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/download.mp3" #"C:/Users/lundb/Documents/Other/Music/Martin_recordings/Record_(online-voice-recorder.com).mp3"
-f0method = "crepe"#"mangio-crepe"
-index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro/added_IVF789_Flat_nprobe_1_aloe_v2.index"
-index_rate = 0#0.7
+f0method = "mangio-crepe"
+index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUS48E/added_IVF6257_Flat_nprobe_1_NUS48E_v2.index"
+index_rate = 0.7
 filter_radius = 3
 resample_sr = 0
 rms_mix_rate = 0.2
@@ -272,6 +273,33 @@ def semb_interpol(semb1, semb2, step, steps):
     return delta*step + semb1
 
 
+def create_embedding_mapping(max_sid, output_path = "embedding_mapping.json"):
+    mapping = {}
+    for sid in range(max_sid):
+        semb = get_semb(sid)
+        mapping[sid] = semb.tolist()
+
+    with open(output_path, 'w') as f: 
+        json.dump(mapping, f)
+
+
+def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
+    initial_mapping = {}
+    files = os.listdir(logs_path)
+    for file in files:
+        sid = file.split("_")[0]
+        if sid not in initial_mapping:
+            initial_mapping[sid] = []
+        loaded_file = np.load(os.path.join(logs_path, file))
+        initial_mapping[sid].extend(loaded_file)
+
+    mapping = {}
+    for key, value in initial_mapping.items():
+        sorted_f0 = np.sort(value)
+        mapping[key] = np.median(sorted_f0)
+
+    with open(output_path, 'w') as f: 
+        json.dump(mapping, f)
 
 # get_inter(sid=0,f0up_key=0)
 # get_inter(sid=1,f0up_key=0)
@@ -334,9 +362,9 @@ def semb_interpol(semb1, semb2, step, steps):
 # d_vector4 = np.load("d_vector_4.npy")
 # d_vector5 = np.load("d_vector_5.npy")
 
-for i in range(1, 109, 9):
-    generate(i, function="infer_sid", output_path=f"test_stuff/test_{i}.wav")
-# generate(0, function="infer_sid", output_path="test_stuff/test_2.wav")
+# for i in range(0, 14):
+#     generate(i, function="infer_sid", output_path=f"test_stuff/mixed_{i}.wav")
+# generate(0, function="infer_sid", f0up_key=7, output_path="test_stuff/test2.wav")
 # generate(1, function="infer_sid", output_path="test_stuff/test_1.wav")
 # generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
@@ -354,3 +382,6 @@ for i in range(1, 109, 9):
 # generate(o_semb, function="infer_semb", output_path="test_stuff/test_0.wav")
 # generate(gen_semb, function="infer_semb", output_path="test_stuff/test_1.wav")
 
+
+# create_embedding_mapping(14)
+create_f0_mapping("logs/mixed_dataset_test_freq/2b-f0nsf")

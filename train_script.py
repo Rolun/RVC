@@ -478,8 +478,8 @@ def click_train(
 def main():
     use_d_vectors = False
     use_se_loss = False
-    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/VocalSet11Small" #Trainingset folder
-    exp_dir1 = "vocalset" #Experiment name
+    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #Trainingset folder
+    exp_dir1 = "mixed_dataset_test_freq" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder
@@ -510,26 +510,26 @@ def main():
 
     print("feature extraction done")
 
-    train_index(exp_dir1, version19)
+    # train_index(exp_dir1, version19)
 
-    print("index trained")
+    # print("index trained")
 
-    click_train(
-        exp_dir1,
-        sr2,
-        if_f0_3,
-        use_d_vectors,
-        use_se_loss,
-        save_epoch10,
-        total_epoch11,
-        batch_size12,
-        if_save_latest13,
-        pretrained_G14,
-        pretrained_D15,
-        gpus16,
-        if_cache_gpu17,
-        if_save_every_weights18,
-        version19
-    )
+    # click_train(
+    #     exp_dir1,
+    #     sr2,
+    #     if_f0_3,
+    #     use_d_vectors,
+    #     use_se_loss,
+    #     save_epoch10,
+    #     total_epoch11,
+    #     batch_size12,
+    #     if_save_latest13,
+    #     pretrained_G14,
+    #     pretrained_D15,
+    #     gpus16,
+    #     if_cache_gpu17,
+    #     if_save_every_weights18,
+    #     version19
+    # )
 
 main()
