@@ -181,10 +181,10 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/mixed_dataset_e155_s18135.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/download.mp3" #"C:/Users/lundb/Documents/Other/Music/Martin_recordings/Record_(online-voice-recorder.com).mp3"
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/sandro_rita_NUS48E_e155.pth" #merged3_e185_s8880.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav" #"C:/Users/lundb/Documents/Other/Music/Martin_recordings/Record_(online-voice-recorder.com).mp3"
 f0method = "mangio-crepe"
-index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUS48E/added_IVF6257_Flat_nprobe_1_NUS48E_v2.index"
+index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
 filter_radius = 3
 resample_sr = 0
@@ -365,7 +365,7 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # for i in range(0, 14):
 #     generate(i, function="infer_sid", output_path=f"test_stuff/mixed_{i}.wav")
 # generate(0, function="infer_sid", f0up_key=7, output_path="test_stuff/test2.wav")
-# generate(1, function="infer_sid", output_path="test_stuff/test_1.wav")
+generate(1, function="infer_sid", f0up_key=1, output_path="test_stuff/1_test.wav")
 # generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
 # generate(None, function="infer_d_vector")
@@ -384,4 +384,4 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 
 
 # create_embedding_mapping(14)
-create_f0_mapping("logs/mixed_dataset_test_freq/2b-f0nsf")
+# create_f0_mapping("logs/mixed_dataset_test_freq/2b-f0nsf")
