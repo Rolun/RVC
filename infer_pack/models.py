@@ -442,6 +442,7 @@ class GeneratorNSF(torch.nn.Module):
             sampling_rate=sr, harmonic_num=0, is_half=is_half
         )
         self.noise_convs = nn.ModuleList()
+        self.formant_convs = nn.ModuleList()
         self.conv_pre = Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
         )
@@ -472,8 +473,18 @@ class GeneratorNSF(torch.nn.Module):
                         padding=stride_f0 // 2,
                     )
                 )
+                self.formant_convs.append(
+                    Conv1d(
+                        1,
+                        c_cur,
+                        kernel_size=stride_f0 * 2,
+                        stride=stride_f0,
+                        padding=stride_f0 // 2,
+                    )
+                )
             else:
                 self.noise_convs.append(Conv1d(1, c_cur, kernel_size=1))
+                self.formant_convs.append(Conv1d(1, c_cur, kernel_size=1))
 
         self.resblocks = nn.ModuleList()
         for i in range(len(self.ups)):
@@ -490,10 +501,25 @@ class GeneratorNSF(torch.nn.Module):
             self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
 
         self.upp = np.prod(upsample_rates)
+        self.sr = sr
 
-    def forward(self, x, f0, g=None):
+    def forward(self, x, f0, formants=(None, None, None), g=None):
         har_source, noi_source, uv = self.m_source(f0, self.upp)
+        har_source_f1, _, _ = self.m_source(formants[0], self.upp)
+        har_source_f2, _, _ = self.m_source(formants[1], self.upp)
+        har_source_f3, _, _ = self.m_source(formants[2], self.upp)
+        # np.save(f"har_source_f0", har_source.cpu().detach().numpy())
+        # np.save(f"har_source_f1", har_source_f1.cpu().detach().numpy())
+        # np.save(f"har_source_formants", (har_source_f1+har_source_f2+har_source_f3).cpu().detach().numpy())
+        # np.save(f"har_source_added", (har_source_f1+har_source_f2+har_source_f3+har_source).cpu().detach().numpy())
+        # print(f0.shape)
+        # print(formants[0].shape)
+
+        # print(f0[0])
+        # print(formants[0][0])
+        
         har_source = har_source.transpose(1, 2)
+        formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
         x = self.conv_pre(x)
         if g is not None:
             x = x + self.cond(g)
@@ -502,7 +528,9 @@ class GeneratorNSF(torch.nn.Module):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
             x = self.ups[i](x)
             x_source = self.noise_convs[i](har_source)
-            x = x + x_source
+            x_formants = self.formant_convs[i](formant_source)
+
+            x = x + x_source + x_formants
             xs = None
             for j in range(self.num_kernels):
                 if xs is None:
@@ -779,7 +807,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.enc_q.remove_weight_norm()
 
     def forward(
-        self, phone, phone_lengths, pitch, pitchf, y, y_lengths, aux_input={"d_vectors": None, "speaker_ids": None},
+        self, phone, phone_lengths, pitch, pitchf, f1, f2, f3, y, y_lengths, aux_input={"d_vectors": None, "speaker_ids": None},
     ):  # 这里ds是id，[bs,1]
         # print(1,pitch.shape)#[bs,t]        
         # if g is None:
@@ -799,17 +827,21 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         )
         # print(-1,pitchf.shape,ids_slice,self.segment_size,self.hop_length,self.segment_size//self.hop_length)
         pitchf = commons.slice_segments2(pitchf, ids_slice, self.segment_size)
+        f1 = commons.slice_segments2(f1, ids_slice, self.segment_size)
+        f2 = commons.slice_segments2(f2, ids_slice, self.segment_size)
+        f3 = commons.slice_segments2(f3, ids_slice, self.segment_size)
+        
         # print(-2,pitchf.shape,z_slice.shape)
-        o = self.dec(z_slice, pitchf, g=g)
+        o = self.dec(z_slice, pitchf, formants=(f1,f2,f3), g=g)
 
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    def infer(self, phone, phone_lengths, pitch, nsff0, sid, max_len=None):
+    def infer(self, phone, phone_lengths, pitch, nsff0, sid, formants, max_len=None):
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
-        o = self.dec((z * x_mask)[:, :, :max_len], nsff0, g=g)
+        o = self.dec((z * x_mask)[:, :, :max_len], nsff0, formants=formants, g=g)
         return o, x_mask, (z, z_p, m_p, logs_p)
     
     def infer_sembedding(self, sid):

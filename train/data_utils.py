@@ -248,9 +248,9 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         # spec_length = wav_length // hop_length
         audiopaths_and_text_new = []
         lengths = []
-        for audiopath, text, pitch, pitchf, dv in self.audiopaths_and_text:
+        for audiopath, text, pitch, pitchf, formants, dv in self.audiopaths_and_text:
             if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
-                audiopaths_and_text_new.append([audiopath, text, pitch, pitchf, dv])
+                audiopaths_and_text_new.append([audiopath, text, pitch, pitchf, formants, dv])
                 lengths.append(os.path.getsize(audiopath) // (3 * self.hop_length))
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
@@ -265,9 +265,10 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         phone = audiopath_and_text[1]
         pitch = audiopath_and_text[2]
         pitchf = audiopath_and_text[3]
-        dv = audiopath_and_text[4]
+        formant = audiopath_and_text[4]
+        dv = audiopath_and_text[5]
 
-        phone, pitch, pitchf = self.get_labels(phone, pitch, pitchf)
+        phone, pitch, pitchf, f1, f2, f3 = self.get_labels(phone, pitch, pitchf, formant)
         spec, wav = self.get_audio(file)
         dv = self.get_sid(dv)
 
@@ -285,23 +286,33 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             phone = phone[:len_min, :]
             pitch = pitch[:len_min]
             pitchf = pitchf[:len_min]
+            f1 = f1[:len_min]
+            f2 = f2[:len_min]
+            f3 = f3[:len_min]
 
-        return (spec, wav, phone, pitch, pitchf, dv)
+        return (spec, wav, phone, pitch, pitchf, f1, f2, f3, dv)
 
-    def get_labels(self, phone, pitch, pitchf):
+    def get_labels(self, phone, pitch, pitchf, formant):
         phone = np.load(phone)
         phone = np.repeat(phone, 2, axis=0)
         pitch = np.load(pitch)
         pitchf = np.load(pitchf)
+        f1, f2, f3 = np.load(formant)
         n_num = min(phone.shape[0], 900)  # DistributedBucketSampler
         # print(234,phone.shape,pitch.shape)
         phone = phone[:n_num, :]
         pitch = pitch[:n_num]
         pitchf = pitchf[:n_num]
+        f1 = f1[:n_num]
+        f2 = f2[:n_num]
+        f3 = f3[:n_num]
         phone = torch.FloatTensor(phone)
         pitch = torch.LongTensor(pitch)
         pitchf = torch.FloatTensor(pitchf)
-        return phone, pitch, pitchf
+        f1 = torch.FloatTensor(f1)
+        f2 = torch.FloatTensor(f2)
+        f3 = torch.FloatTensor(f3)
+        return phone, pitch, pitchf, f1, f2, f3
 
     def get_audio(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -385,9 +396,15 @@ class TextAudioCollateMultiNSFsid:
         )  # (spec, wav, phone, pitch)
         pitch_padded = torch.LongTensor(len(batch), max_phone_len)
         pitchf_padded = torch.FloatTensor(len(batch), max_phone_len)
+        f1_padded = torch.FloatTensor(len(batch), max_phone_len)
+        f2_padded = torch.FloatTensor(len(batch), max_phone_len)
+        f3_padded = torch.FloatTensor(len(batch), max_phone_len)
         phone_padded.zero_()
         pitch_padded.zero_()
         pitchf_padded.zero_()
+        f1_padded.zero_()
+        f2_padded.zero_()
+        f3_padded.zero_()
         # dv = torch.FloatTensor(len(batch), 256)#gin=256
         sid = torch.LongTensor(len(batch))
 
@@ -411,8 +428,14 @@ class TextAudioCollateMultiNSFsid:
             pitchf = row[4]
             pitchf_padded[i, : pitchf.size(0)] = pitchf
 
+            f1 = row[5]
+            f1_padded[i, : f1.size(0)] = f1
+            f2 = row[6]
+            f2_padded[i, : f2.size(0)] = f2
+            f3 = row[7]
+            f3_padded[i, : f3.size(0)] = f3
             # dv[i] = row[5]
-            sid[i] = row[5]
+            sid[i] = row[8]
 
         return (
             phone_padded,
@@ -423,6 +446,9 @@ class TextAudioCollateMultiNSFsid:
             spec_lengths,
             wave_padded,
             wave_lengths,
+            f1_padded,
+            f2_padded,
+            f3_padded,
             # dv
             sid,
         )

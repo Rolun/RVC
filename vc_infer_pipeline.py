@@ -7,6 +7,7 @@ import scipy.signal as signal
 import pyworld, os, traceback, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
+import math
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
@@ -240,6 +241,46 @@ class VC(object):
         else:
             f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
         return f0_median_hybrid
+
+    def get_formant_values(self, formant_obj, track, p_len=None):
+        formant_values = []
+        for time_step in formant_obj.xs():
+            value = formant_obj.get_value_at_time(track,time_step)
+            if math.isnan(value):
+                value = 0
+            formant_values.append(value)
+        
+        if p_len:
+            pad_size = (p_len - len(formant_values) + 1) // 2
+            if pad_size > 0 or p_len - len(formant_values) - pad_size > 0:
+                formant_values = np.pad(
+                    formant_values, [[pad_size, p_len - len(formant_values) - pad_size]], mode="constant"
+                )
+        return formant_values
+
+    def get_formants(self, x, p_len, formant_shift, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
+        time_step = self.window / self.sr
+
+        formant = (
+            parselmouth.Sound(x, self.sr)
+            .to_formant_burg(
+                time_step=time_step, 
+                max_number_of_formants=max_number_of_formants, 
+                maximum_formant=maximum_formant, 
+                window_length=time_step, 
+                pre_emphasis_from=pre_emphasis_from
+            )
+        )
+        
+        f1 = self.get_formant_values(formant, 1, p_len)
+        f2 = self.get_formant_values(formant, 2, p_len)
+        f3 = self.get_formant_values(formant, 3, p_len)
+
+        f1*=formant_shift
+        f2*=formant_shift
+        f3*=formant_shift
+
+        return (f1, f2, f3)
 
     def get_f0(
         self,
@@ -708,6 +749,7 @@ class VC(object):
         function="sid_inf",
         input_audio=None,
         filter_radius=None,
+        formant_shift=1,
     ):
         if (
             file_index != ""
@@ -791,6 +833,16 @@ class VC(object):
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
 
+            f1, f2, f3 = self.get_formants(audio_pad, p_len, formant_shift)
+            f1 = f1[:p_len]
+            f2 = f2[:p_len]
+            f3 = f3[:p_len]
+            f1 = torch.tensor(f1, device=self.device).unsqueeze(0).float()
+            f2 = torch.tensor(f2, device=self.device).unsqueeze(0).float()
+            f3 = torch.tensor(f3, device=self.device).unsqueeze(0).float()
+
+            
+
         t2 = ttime()
         times[1] += t2 - t1
         if function == "get_inter":
@@ -815,6 +867,7 @@ class VC(object):
         for t in opt_ts:
             t = t // self.window * self.window
             if if_f0 == 1:
+                
                 audio_opt.append(
                     self.vc2(
                         model,
@@ -832,6 +885,7 @@ class VC(object):
                         version,
                         protect,
                         function,
+                        (f1,f2,f3)
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             else:
@@ -872,7 +926,8 @@ class VC(object):
                     index_rate,
                     version,
                     protect,
-                    function
+                    function,
+                    (f1,f2,f3)
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         else:
@@ -929,7 +984,8 @@ class VC(object):
         index_rate,
         version,
         protect,
-        function
+        function,
+        formants
     ):  # ,file_index,file_big_npy
         feats = torch.from_numpy(audio0)
         if self.is_half:
@@ -977,6 +1033,8 @@ class VC(object):
                 + (1 - index_rate) * feats
             )
         
+        f1, f2, f3 = formants
+
         feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
         if protect < 0.5:
             feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
@@ -989,6 +1047,9 @@ class VC(object):
             if pitch != None and pitchf != None:
                 pitch = pitch[:, :p_len]
                 pitchf = pitchf[:, :p_len]
+                f1 = f1[:, :p_len]
+                f2 = f2[:, :p_len]
+                f3 = f3[:, :p_len]
 
         if protect < 0.5:
             pitchff = pitchf.clone()
@@ -1003,7 +1064,7 @@ class VC(object):
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0])
+                        (net_g.infer(feats, p_len, pitch, pitchf, sid, (f1, f2, f3))[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()

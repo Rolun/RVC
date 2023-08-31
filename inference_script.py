@@ -144,7 +144,8 @@ def vc_single(input_audio, f0_up_key, f0_file, f0_method, file_index, index_rate
         inter=inter,
         function=function,
         input_audio=input_audio,
-        filter_radius=filter_radius
+        filter_radius=filter_radius,
+        formant_shift=1.5
     )
     print(times)
     return audio_opt
@@ -181,8 +182,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/sandro_rita_NUS48E_e155.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav" #"C:/Users/lundb/Documents/Other/Music/Martin_recordings/Record_(online-voice-recorder.com).mp3"
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/Sandro-formant-test_e250_s3500.pth" #merged3_e185_s8880.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/i.wav" #C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav
 f0method = "mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
@@ -190,7 +191,7 @@ filter_radius = 3
 resample_sr = 0
 rms_mix_rate = 0.2
 protect = 0.33
-crepe_hop_length = 128
+crepe_hop_length = 64
 f0_file = None#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_input_f0.txt"
 se_model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/model_se.pth"
 se_config_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/config_se.json" 
@@ -365,7 +366,7 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # for i in range(0, 14):
 #     generate(i, function="infer_sid", output_path=f"test_stuff/mixed_{i}.wav")
 # generate(0, function="infer_sid", f0up_key=7, output_path="test_stuff/test2.wav")
-generate(1, function="infer_sid", f0up_key=1, output_path="test_stuff/1_test.wav")
+generate(9, function="infer_sid", f0up_key=0, output_path="test_stuff/formant_test_1.5.wav")
 # generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
 # generate(None, function="infer_d_vector")

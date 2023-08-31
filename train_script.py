@@ -3,7 +3,7 @@ import torch, os, traceback, sys, warnings, shutil, numpy as np
 os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 import threading
 from time import sleep
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import faiss
 from random import shuffle
 import json
@@ -242,7 +242,25 @@ def extract_feature(gpus, n_p, f0method, if_f0, use_d_vectors, exp_dir, version1
         ),
     ).start()
 
-    while not (done1[0] and done2[0] and done3[0]):
+
+    cmd = config.python_cmd + " extract_formants.py %s/logs/%s" % (
+        now_dir,
+        exp_dir,
+    )
+    print(cmd)
+    p = Popen(cmd, shell=True, cwd=now_dir)  # , stdin=PIPE, stdout=PIPE,stderr=PIPE
+    ###煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
+    done4 = [False]
+    threading.Thread(
+        target=if_done,
+        args=(
+            done4,
+            p,
+        ),
+    ).start()
+
+
+    while not (done1[0] and done2[0] and done3[0] and done4[0]):
         sleep(0.5)
 
 def train_index(exp_dir1, version19):
@@ -338,6 +356,8 @@ def click_train(
             & set([name.split(".")[0] for name in os.listdir(f0_dir)])
             & set([name.split(".")[0] for name in os.listdir(f0nsf_dir)])
         )
+        formants_dir = "%s/5_formants" % (exp_dir)
+        names = set(names) & set([name.split(".")[0] for name in os.listdir(formants_dir)])
     else:
         names = set([name.split(".")[0] for name in os.listdir(gt_wavs_dir)]) & set(
             [name.split(".")[0] for name in os.listdir(feature_dir)]
@@ -345,6 +365,7 @@ def click_train(
     if use_d_vectors:
         d_vector_dir = "%s/4_d_vectors" % (exp_dir)
         names = set(names) & set([name.split(".")[0] for name in os.listdir(d_vector_dir)])
+
 
     opt = []
     spk_list = []
@@ -355,7 +376,7 @@ def click_train(
         if if_f0_3:
             if use_d_vectors:
                 opt.append(
-                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.npy|%s"
+                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.npy|%s"
                     % (
                         gt_wavs_dir.replace("\\", "\\\\"),
                         name,
@@ -364,6 +385,8 @@ def click_train(
                         f0_dir.replace("\\", "\\\\"),
                         name,
                         f0nsf_dir.replace("\\", "\\\\"),
+                        name,
+                        formants_dir.replace("\\", "\\\\"),
                         name,
                         d_vector_dir.replace("\\", "\\\\"),
                         name,
@@ -372,7 +395,7 @@ def click_train(
                 )
             else:
                 opt.append(
-                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s"
+                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s"
                     % (
                         gt_wavs_dir.replace("\\", "\\\\"),
                         name,
@@ -381,6 +404,8 @@ def click_train(
                         f0_dir.replace("\\", "\\\\"),
                         name,
                         f0nsf_dir.replace("\\", "\\\\"),
+                        name,
+                        formants_dir.replace("\\", "\\\\"),
                         name,
                         spk_id5,
                     )
@@ -401,16 +426,16 @@ def click_train(
         if use_d_vectors:
             for _ in range(2):
                 opt.append(
-                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/4_d_vectors/mute.npy|%s"
-                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, spk_id5)
+                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5_formants/mute.wav.npy|%s/logs/mute/4_d_vectors/mute.npy|%s"
+                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, now_dir, spk_id5)
                 )
         else:
-            for spk_id5 in spk_list:
-                for _ in range(2):
-                    opt.append(
-                        "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s"
-                        % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, spk_id5)
-                    )
+            # for spk_id5 in spk_list:
+            for _ in range(2):
+                opt.append(
+                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5_formants/mute.wav.npy|%s"
+                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, spk_id5)
+                )
     else:
         for _ in range(2):
             opt.append(
@@ -478,15 +503,15 @@ def click_train(
 def main():
     use_d_vectors = False
     use_se_loss = False
-    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #Trainingset folder
-    exp_dir1 = "mixed_dataset_test_freq" #Experiment name
+    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/Sandro-test-dataset" #Trainingset folder
+    exp_dir1 = "Sandro-test-dataset" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder
     np7 = 2 #Parallell processes
-    f0method8 = "mangio-crepe" #Pitch extraction method
+    f0method8 = "crepe" #Pitch extraction method
     save_epoch10 = 5 #Save frequency
-    total_epoch11 = 250 #Total epochs
+    total_epoch11 = 1#250 #Total epochs
     batch_size12 = 16 #Batch size
     if_save_latest13 = True #Save only the latest .ckpt file
     pretrained_G14 = "pretrained_v2/f0G40k.pth"
@@ -506,30 +531,30 @@ def main():
 
     # print("preprocess done")
 
-    extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
+    # extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
 
-    print("feature extraction done")
+    # print("feature extraction done")
 
     # train_index(exp_dir1, version19)
 
     # print("index trained")
 
-    # click_train(
-    #     exp_dir1,
-    #     sr2,
-    #     if_f0_3,
-    #     use_d_vectors,
-    #     use_se_loss,
-    #     save_epoch10,
-    #     total_epoch11,
-    #     batch_size12,
-    #     if_save_latest13,
-    #     pretrained_G14,
-    #     pretrained_D15,
-    #     gpus16,
-    #     if_cache_gpu17,
-    #     if_save_every_weights18,
-    #     version19
-    # )
+    click_train(
+        exp_dir1,
+        sr2,
+        if_f0_3,
+        use_d_vectors,
+        use_se_loss,
+        save_epoch10,
+        total_epoch11,
+        batch_size12,
+        if_save_latest13,
+        pretrained_G14,
+        pretrained_D15,
+        gpus16,
+        if_cache_gpu17,
+        if_save_every_weights18,
+        version19
+    )
 
 main()
