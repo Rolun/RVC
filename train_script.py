@@ -503,8 +503,8 @@ def click_train(
 def main():
     use_d_vectors = False
     use_se_loss = False
-    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/Sandro-test-dataset" #Trainingset folder
-    exp_dir1 = "Sandro-test-dataset" #Experiment name
+    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/clean_singer" #Trainingset folder
+    exp_dir1 = "NUSR8E-formant-experiment-small" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder

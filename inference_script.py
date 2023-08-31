@@ -366,7 +366,7 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # for i in range(0, 14):
 #     generate(i, function="infer_sid", output_path=f"test_stuff/mixed_{i}.wav")
 # generate(0, function="infer_sid", f0up_key=7, output_path="test_stuff/test2.wav")
-generate(9, function="infer_sid", f0up_key=0, output_path="test_stuff/formant_test_1.5.wav")
+generate(9, function="infer_sid", f0up_key=0, output_path="test_stuff/formant_test2.wav")
 # generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
 # generate(None, function="infer_d_vector")
