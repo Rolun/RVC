@@ -90,7 +90,7 @@ class TextEncoder768(nn.Module):
         )
         self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
-    def forward(self, phone, pitch, lengths): #, formants = (None, None, None)
+    def forward(self, phone, pitch, lengths, formants = (None, None, None)):
         if pitch == None:
             x = self.emb_phone(phone)
         else:
@@ -477,18 +477,18 @@ class GeneratorNSF(torch.nn.Module):
                         padding=stride_f0 // 2,
                     )
                 )
-                # self.formant_convs.append(
-                #     Conv1d(
-                #         1,
-                #         c_cur,
-                #         kernel_size=stride_f0 * 2,
-                #         stride=stride_f0,
-                #         padding=stride_f0 // 2,
-                #     )
-                # )
+                self.formant_convs.append(
+                    Conv1d(
+                        1,
+                        c_cur,
+                        kernel_size=stride_f0 * 2,
+                        stride=stride_f0,
+                        padding=stride_f0 // 2,
+                    )
+                )
             else:
                 self.noise_convs.append(Conv1d(1, c_cur, kernel_size=1))
-                # self.formant_convs.append(Conv1d(1, c_cur, kernel_size=1))
+                self.formant_convs.append(Conv1d(1, c_cur, kernel_size=1))
 
         self.resblocks = nn.ModuleList()
         for i in range(len(self.ups)):
@@ -531,10 +531,10 @@ class GeneratorNSF(torch.nn.Module):
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
             x = self.ups[i](x)
-            x_source = self.noise_convs[i](har_source+formant_source)
-            # x_formants = self.formant_convs[i](formant_source)
+            x_source = self.noise_convs[i](har_source)
+            x_formants = self.formant_convs[i](formant_source)
 
-            x = x + x_source
+            x = x + x_source + x_formants
             xs = None
             for j in range(self.num_kernels):
                 if xs is None:
@@ -827,7 +827,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         else:
             g = self.emb_g(g).unsqueeze(-1)
 
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, formants=(f1,f2,f3))
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
         z_slice, ids_slice = commons.rand_slice_segments(

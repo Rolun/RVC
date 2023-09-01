@@ -107,7 +107,7 @@ def load_hubert(device, is_half):
     hubert_model.eval()
     return hubert_model
 
-def vc_single(input_audio, f0_up_key, f0_file, f0_method, file_index, index_rate, filter_radius, resample_sr, rms_mix_rate, protect, tgt_sr, net_g, vc, hubert_model, version, cpt, crepe_hop_length, sid = None, semb = None, inter=None, function="infer_sid"):
+def vc_single(input_audio, f0_up_key, f0_file, f0_method, file_index, index_rate, filter_radius, resample_sr, rms_mix_rate, protect, tgt_sr, net_g, vc, hubert_model, version, cpt, crepe_hop_length, sid = None, semb = None, inter=None, function="infer_sid", formant_shift=1):
     if input_audio is None:return "You need to upload an audio", None
     f0_up_key = int(f0_up_key)
     audio=load_audio(input_audio,16000)
@@ -145,7 +145,7 @@ def vc_single(input_audio, f0_up_key, f0_file, f0_method, file_index, index_rate
         function=function,
         input_audio=input_audio,
         filter_radius=filter_radius,
-        formant_shift=1.5
+        formant_shift=formant_shift
     )
     print(times)
     return audio_opt
@@ -182,8 +182,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/Sandro-formant-test_e250_s3500.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/i.wav" #C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-small_e185_s2220.pth" #merged3_e185_s8880.pth #Sandro-formant-test_e250_s3500.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"
 f0method = "mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
@@ -250,14 +250,14 @@ def get_d_vector_resemblyzer(audio_file, save_path=""):
 #     model = load_model("C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/pretrained_GE2E/encoder/saved_models/pretrained.pt")
 #     embed = extract_embed_utterance(model, )
 
-def generate(inp, function="infer_sid", f0up_key = 0, output_path = "test.wav"):
+def generate(inp, function="infer_sid", f0up_key = 0, formant_shift=1, output_path = "test.wav"):
     print("Started")
     device_config = Config(device, is_half)
 
     n_spk, tgt_sr, vc, cpt, version, net_g = get_vc(model_path, device_config, is_half, use_d_vector)
     hubert_model = load_hubert(device, is_half)
     if function == "infer_sid":
-        wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,sid=inp,function="infer_sid")
+        wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,sid=inp,function="infer_sid", formant_shift=formant_shift)
     if function == "infer_semb":
         wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,semb=inp,function="infer_semb")
     if function == "infer_inter":
@@ -366,7 +366,7 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # for i in range(0, 14):
 #     generate(i, function="infer_sid", output_path=f"test_stuff/mixed_{i}.wav")
 # generate(0, function="infer_sid", f0up_key=7, output_path="test_stuff/test2.wav")
-generate(9, function="infer_sid", f0up_key=0, output_path="test_stuff/formant_test2.wav")
+generate(0, function="infer_sid", f0up_key=0, formant_shift=0.7, output_path="test_stuff/formant_test0.7.wav")
 # generate(2, function="infer_sid", output_path="test_stuff/test_2.wav")
 # generate(3, function="infer_sid", output_path="test_stuff/test_3.wav")
 # generate(None, function="infer_d_vector")

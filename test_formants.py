@@ -2,10 +2,9 @@ from extract_formants import FeatureInput
 import numpy as np
 
 sources = [
-    "C:/Users/lundb/Documents/Other/Music/i.wav",
-    # "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_0.7.wav", 
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_1.wav",
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_1.5.wav",
+    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test0.5.wav", 
+    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test1.wav",
+    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test1.5.wav",
     ]
 
 formant_feature =FeatureInput()
