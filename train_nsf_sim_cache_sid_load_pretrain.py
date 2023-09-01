@@ -260,14 +260,14 @@ def run(rank, n_gpus, hps):
                 else:
                     formant_convs.append(nn.Conv1d(1, c_cur, kernel_size=1))
 
-            # tmp["dec.formant_convs.0.weight"] = formant_convs[0].weight.data
-            # tmp["dec.formant_convs.0.bias"] = formant_convs[0].bias.data
-            # tmp["dec.formant_convs.1.weight"] = formant_convs[1].weight.data
-            # tmp["dec.formant_convs.1.bias"] = formant_convs[1].bias.data
-            # tmp["dec.formant_convs.2.weight"] = formant_convs[2].weight.data
-            # tmp["dec.formant_convs.2.bias"] = formant_convs[2].bias.data
-            # tmp["dec.formant_convs.3.weight"] = formant_convs[3].weight.data
-            # tmp["dec.formant_convs.3.bias"] = formant_convs[3].bias.data
+            tmp["dec.formant_convs.0.weight"] = formant_convs[0].weight.data
+            tmp["dec.formant_convs.0.bias"] = formant_convs[0].bias.data
+            tmp["dec.formant_convs.1.weight"] = formant_convs[1].weight.data
+            tmp["dec.formant_convs.1.bias"] = formant_convs[1].bias.data
+            tmp["dec.formant_convs.2.weight"] = formant_convs[2].weight.data
+            tmp["dec.formant_convs.2.bias"] = formant_convs[2].bias.data
+            tmp["dec.formant_convs.3.weight"] = formant_convs[3].weight.data
+            tmp["dec.formant_convs.3.bias"] = formant_convs[3].bias.data
             print(
                 net_g.module.load_state_dict(
                     tmp
