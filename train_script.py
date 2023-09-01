@@ -356,8 +356,9 @@ def click_train(
             & set([name.split(".")[0] for name in os.listdir(f0_dir)])
             & set([name.split(".")[0] for name in os.listdir(f0nsf_dir)])
         )
-        formants_dir = "%s/5_formants" % (exp_dir)
-        names = set(names) & set([name.split(".")[0] for name in os.listdir(formants_dir)])
+        formants_dir = "%s/5b_formants" % (exp_dir)
+        coarse_formants_dir = "%s/5a_coarse_formants" % (exp_dir)
+        names = set(names) & set([name.split(".")[0] for name in os.listdir(formants_dir)]) & set([name.split(".")[0] for name in os.listdir(coarse_formants_dir)])
     else:
         names = set([name.split(".")[0] for name in os.listdir(gt_wavs_dir)]) & set(
             [name.split(".")[0] for name in os.listdir(feature_dir)]
@@ -395,7 +396,7 @@ def click_train(
                 )
             else:
                 opt.append(
-                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s"
+                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s"
                     % (
                         gt_wavs_dir.replace("\\", "\\\\"),
                         name,
@@ -406,6 +407,8 @@ def click_train(
                         f0nsf_dir.replace("\\", "\\\\"),
                         name,
                         formants_dir.replace("\\", "\\\\"),
+                        name,
+                        coarse_formants_dir.replace("\\", "\\\\"),
                         name,
                         spk_id5,
                     )
@@ -433,8 +436,8 @@ def click_train(
             # for spk_id5 in spk_list:
             for _ in range(2):
                 opt.append(
-                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5_formants/mute.wav.npy|%s"
-                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, spk_id5)
+                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5b_formants/mute.wav.npy|%s/logs/mute/5a_coarse_formants/mute.wav.npy|%s"
+                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, now_dir, spk_id5)
                 )
     else:
         for _ in range(2):

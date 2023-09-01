@@ -248,9 +248,9 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         # spec_length = wav_length // hop_length
         audiopaths_and_text_new = []
         lengths = []
-        for audiopath, text, pitch, pitchf, formants, dv in self.audiopaths_and_text:
+        for audiopath, text, pitch, pitchf, formants, coarse_formants, dv in self.audiopaths_and_text:
             if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
-                audiopaths_and_text_new.append([audiopath, text, pitch, pitchf, formants, dv])
+                audiopaths_and_text_new.append([audiopath, text, pitch, pitchf, formants, coarse_formants, dv])
                 lengths.append(os.path.getsize(audiopath) // (3 * self.hop_length))
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
@@ -266,9 +266,10 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         pitch = audiopath_and_text[2]
         pitchf = audiopath_and_text[3]
         formant = audiopath_and_text[4]
-        dv = audiopath_and_text[5]
+        coarse_formant = audiopath_and_text[5]
+        dv = audiopath_and_text[6]
 
-        phone, pitch, pitchf, f1, f2, f3 = self.get_labels(phone, pitch, pitchf, formant)
+        phone, pitch, pitchf, f1, f2, f3, cf1, cf2, cf3 = self.get_labels(phone, pitch, pitchf, formant, coarse_formant)
         spec, wav = self.get_audio(file)
         dv = self.get_sid(dv)
 
@@ -289,15 +290,19 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             f1 = f1[:len_min]
             f2 = f2[:len_min]
             f3 = f3[:len_min]
+            cf1 = cf1[:len_min]
+            cf2 = cf2[:len_min]
+            cf3 = cf3[:len_min]
 
-        return (spec, wav, phone, pitch, pitchf, f1, f2, f3, dv)
+        return (spec, wav, phone, pitch, pitchf, f1, f2, f3, cf1, cf2, cf3, dv)
 
-    def get_labels(self, phone, pitch, pitchf, formant):
+    def get_labels(self, phone, pitch, pitchf, formant, coarse_formant):
         phone = np.load(phone)
         phone = np.repeat(phone, 2, axis=0)
         pitch = np.load(pitch)
         pitchf = np.load(pitchf)
         f1, f2, f3 = np.load(formant)
+        cf1, cf2, cf3 = np.load(coarse_formant)
         n_num = min(phone.shape[0], 900)  # DistributedBucketSampler
         # print(234,phone.shape,pitch.shape)
         phone = phone[:n_num, :]
@@ -306,13 +311,19 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         f1 = f1[:n_num]
         f2 = f2[:n_num]
         f3 = f3[:n_num]
+        cf1 = cf1[:n_num]
+        cf2 = cf2[:n_num]
+        cf3 = cf3[:n_num]
         phone = torch.FloatTensor(phone)
         pitch = torch.LongTensor(pitch)
         pitchf = torch.FloatTensor(pitchf)
         f1 = torch.FloatTensor(f1)
         f2 = torch.FloatTensor(f2)
         f3 = torch.FloatTensor(f3)
-        return phone, pitch, pitchf, f1, f2, f3
+        cf1 = torch.LongTensor(cf1)
+        cf2 = torch.LongTensor(cf2)
+        cf3 = torch.LongTensor(cf3)
+        return phone, pitch, pitchf, f1, f2, f3, cf1, cf2, cf3
 
     def get_audio(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -399,12 +410,18 @@ class TextAudioCollateMultiNSFsid:
         f1_padded = torch.FloatTensor(len(batch), max_phone_len)
         f2_padded = torch.FloatTensor(len(batch), max_phone_len)
         f3_padded = torch.FloatTensor(len(batch), max_phone_len)
+        cf1_padded = torch.LongTensor(len(batch), max_phone_len)
+        cf2_padded = torch.LongTensor(len(batch), max_phone_len)
+        cf3_padded = torch.LongTensor(len(batch), max_phone_len)
         phone_padded.zero_()
         pitch_padded.zero_()
         pitchf_padded.zero_()
         f1_padded.zero_()
         f2_padded.zero_()
         f3_padded.zero_()
+        cf1_padded.zero_()
+        cf2_padded.zero_()
+        cf3_padded.zero_()
         # dv = torch.FloatTensor(len(batch), 256)#gin=256
         sid = torch.LongTensor(len(batch))
 
@@ -434,8 +451,15 @@ class TextAudioCollateMultiNSFsid:
             f2_padded[i, : f2.size(0)] = f2
             f3 = row[7]
             f3_padded[i, : f3.size(0)] = f3
+
+            cf1 = row[8]
+            cf1_padded[i, : cf1.size(0)] = cf1
+            cf2 = row[9]
+            cf2_padded[i, : cf2.size(0)] = cf2
+            cf3 = row[10]
+            cf3_padded[i, : cf3.size(0)] = cf3
             # dv[i] = row[5]
-            sid[i] = row[8]
+            sid[i] = row[11]
 
         return (
             phone_padded,
@@ -449,6 +473,9 @@ class TextAudioCollateMultiNSFsid:
             f1_padded,
             f2_padded,
             f3_padded,
+            cf1_padded,
+            cf2_padded,
+            cf3_padded,
             # dv
             sid,
         )

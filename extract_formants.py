@@ -27,6 +27,12 @@ class FeatureInput(object):
         self.fs = samplerate
         self.hop = hop_size
 
+        self.formant_bin = 256
+        self.formant_max = 5500.0
+        self.formant_min = 50.0
+        self.formant_mel_min = 1127 * np.log(1 + self.formant_min / 700)
+        self.formant_mel_max = 1127 * np.log(1 + self.formant_max / 700)
+
     def get_formant_values(self, formant_obj, track, p_len=None):
         formant_values = []
         for time_step in formant_obj.xs():
@@ -68,24 +74,46 @@ class FeatureInput(object):
 
         return f1, f2, f3
     
+    def coarse_formant(self, fN):
+        formant_mel = 1127 * np.log(1 + fN / 700)
+        formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - self.formant_mel_min) * (
+            self.formant_bin - 2
+        ) / (self.formant_mel_max - self.formant_mel_min) + 1
+
+        # use 0 or 1
+        formant_mel[formant_mel <= 1] = 1
+        formant_mel[formant_mel > self.formant_bin - 1] = self.formant_bin - 1
+        formant_coarse = np.rint(formant_mel).astype(int)
+        assert formant_coarse.max() <= 255 and formant_coarse.min() >= 1, (
+            formant_coarse.max(),
+            formant_coarse.min(),
+        )
+        return formant_coarse
+    
     def go(self, paths):
         if len(paths) == 0:
             printt("no-formant-todo")
         else:
             printt("todo-formant-%s" % len(paths))
             n = max(len(paths) // 5, 1)  # 每个进程最多打印5条
-            for idx, (inp_path, opt_path1) in enumerate(paths):
+            for idx, (inp_path, formants_path, coarse_formants_path) in enumerate(paths):
                 try:
                     if idx % n == 0:
                         printt("formanting,now-%s,all-%s,-%s" % (idx, len(paths), inp_path))
                     if (
-                        os.path.exists(opt_path1 + ".npy") == True
+                        os.path.exists(formants_path + ".npy") == True
                     ):
                         continue
                     featur_pit = self.compute_formants(inp_path)
                     np.save(
-                        opt_path1,
+                        formants_path,
                         featur_pit,
+                        allow_pickle=False,
+                    )
+                    coarse_pit = [self.coarse_formant(fN) for fN in featur_pit]
+                    np.save(
+                        coarse_formants_path,
+                        coarse_pit,
                         allow_pickle=False,
                     )
                 except:
@@ -97,15 +125,18 @@ if __name__ == "__main__":
     featureInput = FeatureInput()
     paths = []
     inp_root = "%s/1_16k_wavs" % (exp_dir)
-    opt_root1 = "%s/5_formants" % (exp_dir)
+    opt_root1 = "%s/5b_formants" % (exp_dir)
+    opt_root2 = "%s/5a_coarse_formants" % (exp_dir)
 
     os.makedirs(opt_root1, exist_ok=True)
+    os.makedirs(opt_root2, exist_ok=True)
     for name in sorted(list(os.listdir(inp_root))):
         inp_path = "%s/%s" % (inp_root, name)
         if "spec" in inp_path:
             continue
         opt_path1 = "%s/%s" % (opt_root1, name)
-        paths.append([inp_path, opt_path1])
+        opt_path2 = "%s/%s" % (opt_root2, name)
+        paths.append([inp_path, opt_path1, opt_path2])
 
     ps = []
 

@@ -85,19 +85,22 @@ class TextEncoder768(nn.Module):
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         if f0 == True:
             self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
+            self.emb_formant1 = nn.Embedding(256, hidden_channels)
+            self.emb_formant2 = nn.Embedding(256, hidden_channels)
+            self.emb_formant3 = nn.Embedding(256, hidden_channels)
         self.encoder = attentions.Encoder(
             hidden_channels, filter_channels, n_heads, n_layers, kernel_size, p_dropout
         )
         self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
-    def forward(self, phone, pitch, lengths, formants = (None, None, None)):
+    def forward(self, phone, pitch, lengths, coarse_formants = (None, None, None)):
         if pitch == None:
             x = self.emb_phone(phone)
         else:
             x = self.emb_phone(phone) + self.emb_pitch(pitch)
 
-        # if formants[0] != None:
-        #     x = x + self.emb_formant1(formants[0]) + self.emb_formant2(formants[1]) + self.emb_formant3(formants[2])
+        if coarse_formants[0] != None:
+            x = x + self.emb_formant1(coarse_formants[0]) + self.emb_formant2(coarse_formants[1]) + self.emb_formant3(coarse_formants[2])
 
         x = x * math.sqrt(self.hidden_channels)  # [b, t, h]
         x = self.lrelu(x)
@@ -477,18 +480,18 @@ class GeneratorNSF(torch.nn.Module):
                         padding=stride_f0 // 2,
                     )
                 )
-                self.formant_convs.append(
-                    Conv1d(
-                        1,
-                        c_cur,
-                        kernel_size=stride_f0 * 2,
-                        stride=stride_f0,
-                        padding=stride_f0 // 2,
-                    )
-                )
+                # self.formant_convs.append(
+                #     Conv1d(
+                #         1,
+                #         c_cur,
+                #         kernel_size=stride_f0 * 2,
+                #         stride=stride_f0,
+                #         padding=stride_f0 // 2,
+                #     )
+                # )
             else:
                 self.noise_convs.append(Conv1d(1, c_cur, kernel_size=1))
-                self.formant_convs.append(Conv1d(1, c_cur, kernel_size=1))
+                # self.formant_convs.append(Conv1d(1, c_cur, kernel_size=1))
 
         self.resblocks = nn.ModuleList()
         for i in range(len(self.ups)):
@@ -509,9 +512,9 @@ class GeneratorNSF(torch.nn.Module):
 
     def forward(self, x, f0, formants=(None, None, None), g=None):
         har_source, noi_source, uv = self.m_source(f0, self.upp)
-        har_source_f1, _, _ = self.m_source(formants[0], self.upp)
-        har_source_f2, _, _ = self.m_source(formants[1], self.upp)
-        har_source_f3, _, _ = self.m_source(formants[2], self.upp)
+        # har_source_f1, _, _ = self.m_source(formants[0], self.upp)
+        # har_source_f2, _, _ = self.m_source(formants[1], self.upp)
+        # har_source_f3, _, _ = self.m_source(formants[2], self.upp)
         # np.save(f"har_source_f0", har_source.cpu().detach().numpy())
         # np.save(f"har_source_f1", har_source_f1.cpu().detach().numpy())
         # np.save(f"har_source_formants", (har_source_f1+har_source_f2+har_source_f3).cpu().detach().numpy())
@@ -523,7 +526,7 @@ class GeneratorNSF(torch.nn.Module):
         # print(formants[0][0])
         
         har_source = har_source.transpose(1, 2)
-        formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
+        # formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
         x = self.conv_pre(x)
         if g is not None:
             x = x + self.cond(g)
@@ -532,9 +535,9 @@ class GeneratorNSF(torch.nn.Module):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
             x = self.ups[i](x)
             x_source = self.noise_convs[i](har_source)
-            x_formants = self.formant_convs[i](formant_source)
+            # x_formants = self.formant_convs[i](formant_source)
 
-            x = x + x_source + x_formants
+            x = x + x_source #+ x_formants
             xs = None
             for j in range(self.num_kernels):
                 if xs is None:
@@ -811,7 +814,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.enc_q.remove_weight_norm()
 
     def forward(
-        self, phone, phone_lengths, pitch, pitchf, f1, f2, f3, y, y_lengths, aux_input={"d_vectors": None, "speaker_ids": None},
+        self, phone, phone_lengths, pitch, pitchf, f1, f2, f3, cf1, cf2, cf3, y, y_lengths, aux_input={"d_vectors": None, "speaker_ids": None},
     ):  # 这里ds是id，[bs,1]
         # print(1,pitch.shape)#[bs,t]        
         # if g is None:
@@ -819,6 +822,9 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         f1[pitchf==0]=0
         f2[pitchf==0]=0
         f3[pitchf==0]=0
+        cf1[pitch==1]=1
+        cf2[pitch==1]=1
+        cf3[pitch==1]=1
 
         sid, g, = self._set_cond_input(aux_input)
 
@@ -827,7 +833,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         else:
             g = self.emb_g(g).unsqueeze(-1)
 
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, formants=(f1,f2,f3))
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(cf1,cf2,cf3))
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
         z_slice, ids_slice = commons.rand_slice_segments(

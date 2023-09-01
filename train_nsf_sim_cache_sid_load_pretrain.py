@@ -98,20 +98,21 @@ def main():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
     children = []
-    for i in range(n_gpus):
-        subproc = mp.Process(
-            target=run,
-            args=(
-                i,
-                n_gpus,
-                hps,
-            ),
-        )
-        children.append(subproc)
-        subproc.start()
+    run(0, n_gpus, hps)
+    # for i in range(n_gpus):
+    #     subproc = mp.Process(
+    #         target=run,
+    #         args=(
+    #             i,
+    #             n_gpus,
+    #             hps,
+    #         ),
+    #     )
+    #     children.append(subproc)
+    #     subproc.start()
 
-    for i in range(n_gpus):
-        children[i].join()
+    # for i in range(n_gpus):
+    #     children[i].join()
 
 
 def run(rank, n_gpus, hps):
@@ -243,31 +244,38 @@ def run(rank, n_gpus, hps):
             else:
                 tmp["emb_g.weight"] = nn.Embedding(NUMBER_OF_SPEAKERS, 256).weight.data
 
-            formant_convs = nn.ModuleList()
-            for i, (u, k) in enumerate(zip(hps.model.upsample_rates, hps.model.upsample_kernel_sizes)):
-                c_cur = hps.model.upsample_initial_channel // (2 ** (i + 1))
-                if i + 1 < len(hps.model.upsample_rates):
-                    stride_f0 = np.prod(hps.model.upsample_rates[i + 1 :])
-                    formant_convs.append(
-                        nn.Conv1d(
-                            1,
-                            c_cur,
-                            kernel_size=stride_f0 * 2,
-                            stride=stride_f0,
-                            padding=stride_f0 // 2,
-                        )
-                    )
-                else:
-                    formant_convs.append(nn.Conv1d(1, c_cur, kernel_size=1))
+            # Formant Convs for the generator
+            # formant_convs = nn.ModuleList()
+            # for i, (u, k) in enumerate(zip(hps.model.upsample_rates, hps.model.upsample_kernel_sizes)):
+            #     c_cur = hps.model.upsample_initial_channel // (2 ** (i + 1))
+            #     if i + 1 < len(hps.model.upsample_rates):
+            #         stride_f0 = np.prod(hps.model.upsample_rates[i + 1 :])
+            #         formant_convs.append(
+            #             nn.Conv1d(
+            #                 1,
+            #                 c_cur,
+            #                 kernel_size=stride_f0 * 2,
+            #                 stride=stride_f0,
+            #                 padding=stride_f0 // 2,
+            #             )
+            #         )
+            #     else:
+            #         formant_convs.append(nn.Conv1d(1, c_cur, kernel_size=1))
+            # tmp["dec.formant_convs.0.weight"] = formant_convs[0].weight.data
+            # tmp["dec.formant_convs.0.bias"] = formant_convs[0].bias.data
+            # tmp["dec.formant_convs.1.weight"] = formant_convs[1].weight.data
+            # tmp["dec.formant_convs.1.bias"] = formant_convs[1].bias.data
+            # tmp["dec.formant_convs.2.weight"] = formant_convs[2].weight.data
+            # tmp["dec.formant_convs.2.bias"] = formant_convs[2].bias.data
+            # tmp["dec.formant_convs.3.weight"] = formant_convs[3].weight.data
+            # tmp["dec.formant_convs.3.bias"] = formant_convs[3].bias.data
 
-            tmp["dec.formant_convs.0.weight"] = formant_convs[0].weight.data
-            tmp["dec.formant_convs.0.bias"] = formant_convs[0].bias.data
-            tmp["dec.formant_convs.1.weight"] = formant_convs[1].weight.data
-            tmp["dec.formant_convs.1.bias"] = formant_convs[1].bias.data
-            tmp["dec.formant_convs.2.weight"] = formant_convs[2].weight.data
-            tmp["dec.formant_convs.2.bias"] = formant_convs[2].bias.data
-            tmp["dec.formant_convs.3.weight"] = formant_convs[3].weight.data
-            tmp["dec.formant_convs.3.bias"] = formant_convs[3].bias.data
+            # Formant hidden layers for the text encoder
+            
+            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+
             print(
                 net_g.module.load_state_dict(
                     tmp
@@ -376,6 +384,9 @@ def train_and_evaluate(
                             f1,
                             f2,
                             f3,
+                            cf1,
+                            cf2,
+                            cf3,
                             sid,
                         ) = info
                 else:
@@ -398,6 +409,9 @@ def train_and_evaluate(
                         f1 = f1.cuda(rank, non_blocking=True)
                         f2 = f2.cuda(rank, non_blocking=True)
                         f3 = f3.cuda(rank, non_blocking=True)
+                        cf1 = cf1.cuda(rank, non_blocking=True)
+                        cf2 = cf2.cuda(rank, non_blocking=True)
+                        cf3 = cf3.cuda(rank, non_blocking=True)
                     if hps.use_d_vectors:
                         d_vector = d_vector.cuda(rank, non_blocking=True)
                     sid = sid.cuda(rank, non_blocking=True)
@@ -441,6 +455,9 @@ def train_and_evaluate(
                                     f1,
                                     f2,
                                     f3,
+                                    cf1,
+                                    cf2,
+                                    cf3,
                                     sid,
                                 ),
                             )
@@ -499,6 +516,9 @@ def train_and_evaluate(
                     f1,
                     f2,
                     f3,
+                    cf1,
+                    cf2,
+                    cf3,
                     sid,
                 ) = info
         else:
@@ -513,6 +533,9 @@ def train_and_evaluate(
                 f1 = f1.cuda(rank, non_blocking=True)
                 f2 = f2.cuda(rank, non_blocking=True)
                 f3 = f3.cuda(rank, non_blocking=True)
+                cf1 = cf1.cuda(rank, non_blocking=True)
+                cf2 = cf2.cuda(rank, non_blocking=True)
+                cf3 = cf3.cuda(rank, non_blocking=True)
             if hps.use_d_vectors:
                 d_vector = d_vector.cuda(rank, non_blocking=True)
             sid = sid.cuda(rank, non_blocking=True)
@@ -539,7 +562,7 @@ def train_and_evaluate(
                         x_mask,
                         z_mask,
                         (z, z_p, m_p, logs_p, m_q, logs_q),
-                    ) = net_g(phone, phone_lengths, pitch, pitchf, f1, f2, f3, spec, spec_lengths, aux_input={"d_vectors": None, "speaker_ids": sid})
+                    ) = net_g(phone, phone_lengths, pitch, pitchf, f1, f2, f3, cf1, cf2, cf3, spec, spec_lengths, aux_input={"d_vectors": None, "speaker_ids": sid})
             else:
                 (
                     y_hat,
