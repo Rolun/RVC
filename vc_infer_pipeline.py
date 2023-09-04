@@ -242,6 +242,28 @@ class VC(object):
             f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
         return f0_median_hybrid
 
+    def coarse_formant(self, fN):
+        formant_bin = 256
+        formant_max = 5500.0
+        formant_min = 50.0
+        formant_mel_min = 1127 * np.log(1 + formant_min / 700)
+        formant_mel_max = 1127 * np.log(1 + formant_max / 700)
+
+        formant_mel = 1127 * np.log(1 + fN / 700)
+        formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - formant_mel_min) * (
+            formant_bin - 2
+        ) / (formant_mel_max - formant_mel_min) + 1
+
+        # use 0 or 1
+        formant_mel[formant_mel <= 1] = 1
+        formant_mel[formant_mel > formant_bin - 1] = formant_bin - 1
+        formant_coarse = np.rint(formant_mel).astype(int)
+        assert formant_coarse.max() <= 255 and formant_coarse.min() >= 1, (
+            formant_coarse.max(),
+            formant_coarse.min(),
+        )
+        return formant_coarse
+
     def get_formant_values(self, formant_obj, track, p_len=None):
         formant_values = []
         for time_step in formant_obj.xs():
@@ -276,11 +298,16 @@ class VC(object):
         f2 = self.get_formant_values(formant, 2, p_len)
         f3 = self.get_formant_values(formant, 3, p_len)
 
-        f1*=formant_shift
-        f2*=formant_shift
-        f3*=formant_shift
+        formant_shift_diff=f1*(1-formant_shift)
+        f1-=formant_shift_diff
+        f2-=formant_shift_diff
+        f3-=formant_shift_diff
 
-        return (f1, f2, f3)
+        cf1 = self.coarse_formant(f1)
+        cf2 = self.coarse_formant(f2)
+        cf3 = self.coarse_formant(f3)
+
+        return (f1, f2, f3, cf1, cf2, cf3)
 
     def get_f0(
         self,
@@ -830,16 +857,30 @@ class VC(object):
             pitchf = pitchf[:p_len]
             if self.device == "mps":
                 pitchf = pitchf.astype(np.float32)
-            pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
-            pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
 
-            f1, f2, f3 = self.get_formants(audio_pad, p_len, formant_shift)
+            f1, f2, f3, cf1, cf2, cf3 = self.get_formants(audio_pad, p_len, formant_shift)
             f1 = f1[:p_len]
             f2 = f2[:p_len]
             f3 = f3[:p_len]
+            f1[pitchf==0]=0
+            f2[pitchf==0]=0
+            f3[pitchf==0]=0
+            cf1 = cf1[:p_len]
+            cf2 = cf2[:p_len]
+            cf3 = cf3[:p_len]
+            cf1[pitch==1]=1
+            cf2[pitch==1]=1
+            cf3[pitch==1]=1
+
+            pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
+            pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
+            
             f1 = torch.tensor(f1, device=self.device).unsqueeze(0).float()
             f2 = torch.tensor(f2, device=self.device).unsqueeze(0).float()
             f3 = torch.tensor(f3, device=self.device).unsqueeze(0).float()
+            cf1 = torch.tensor(cf1, device=self.device).unsqueeze(0).long()
+            cf2 = torch.tensor(cf2, device=self.device).unsqueeze(0).long()
+            cf3 = torch.tensor(cf3, device=self.device).unsqueeze(0).long()
 
             
 
@@ -885,7 +926,8 @@ class VC(object):
                         version,
                         protect,
                         function,
-                        (f1,f2,f3)
+                        (f1,f2,f3),
+                        (cf1,cf2,cf3)
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             else:
@@ -927,7 +969,8 @@ class VC(object):
                     version,
                     protect,
                     function,
-                    (f1,f2,f3)
+                    (f1,f2,f3),
+                    (cf1,cf2,cf3)
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         else:
@@ -985,7 +1028,8 @@ class VC(object):
         version,
         protect,
         function,
-        formants
+        formants,
+        coarse_formants
     ):  # ,file_index,file_big_npy
         feats = torch.from_numpy(audio0)
         if self.is_half:
@@ -1034,6 +1078,7 @@ class VC(object):
             )
         
         f1, f2, f3 = formants
+        cf1, cf2, cf3 = coarse_formants
 
         feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
         if protect < 0.5:
@@ -1050,6 +1095,9 @@ class VC(object):
                 f1 = f1[:, :p_len]
                 f2 = f2[:, :p_len]
                 f3 = f3[:, :p_len]
+                cf1 = cf1[:, :p_len]
+                cf2 = cf2[:, :p_len]
+                cf3 = cf3[:, :p_len]
 
         if protect < 0.5:
             pitchff = pitchf.clone()
@@ -1064,7 +1112,7 @@ class VC(object):
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, sid, (f1, f2, f3))[0][0, 0])
+                        (net_g.infer(feats, p_len, pitch, pitchf, sid, (f1, f2, f3), (cf1, cf2, cf3))[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()

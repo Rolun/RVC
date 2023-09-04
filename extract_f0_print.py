@@ -15,8 +15,11 @@ import scipy.signal as signal # Fork Feature hybrid inference
 logging.getLogger("numba").setLevel(logging.WARNING)
 from multiprocessing import Process
 
-exp_dir = sys.argv[1]
-f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
+try:
+    exp_dir = sys.argv[1]
+    f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
+except:
+    print("Running in function mode")
 
 
 def printt(strr):
@@ -24,9 +27,11 @@ def printt(strr):
     f.write("%s\n" % strr)
     f.flush()
 
-
-n_p = int(sys.argv[2])
-f0method = sys.argv[3]
+try:
+    n_p = int(sys.argv[2])
+    f0method = sys.argv[3]
+except:
+    print("Running in function mode")
 extraction_crepe_hop_length = 0 
 try:
     extraction_crepe_hop_length = int(sys.argv[4])

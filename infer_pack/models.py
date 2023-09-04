@@ -512,21 +512,12 @@ class GeneratorNSF(torch.nn.Module):
 
     def forward(self, x, f0, formants=(None, None, None), g=None):
         har_source, noi_source, uv = self.m_source(f0, self.upp)
-        # har_source_f1, _, _ = self.m_source(formants[0], self.upp)
-        # har_source_f2, _, _ = self.m_source(formants[1], self.upp)
-        # har_source_f3, _, _ = self.m_source(formants[2], self.upp)
-        # np.save(f"har_source_f0", har_source.cpu().detach().numpy())
-        # np.save(f"har_source_f1", har_source_f1.cpu().detach().numpy())
-        # np.save(f"har_source_formants", (har_source_f1+har_source_f2+har_source_f3).cpu().detach().numpy())
-        # np.save(f"har_source_added", (har_source_f1+har_source_f2+har_source_f3+har_source).cpu().detach().numpy())
-        # print(f0.shape)
-        # print(formants[0].shape)
-
-        # print(f0[0])
-        # print(formants[0][0])
+        har_source_f1, _, _ = self.m_source(formants[0], self.upp)
+        har_source_f2, _, _ = self.m_source(formants[1], self.upp)
+        har_source_f3, _, _ = self.m_source(formants[2], self.upp)
         
         har_source = har_source.transpose(1, 2)
-        # formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
+        formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
         x = self.conv_pre(x)
         if g is not None:
             x = x + self.cond(g)
@@ -534,7 +525,7 @@ class GeneratorNSF(torch.nn.Module):
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
             x = self.ups[i](x)
-            x_source = self.noise_convs[i](har_source)
+            x_source = self.noise_convs[i](har_source+formant_source)
             # x_formants = self.formant_convs[i](formant_source)
 
             x = x + x_source #+ x_formants
@@ -792,6 +783,10 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
             self.emb_g = nn.Linear(gin_channels, gin_channels)
         print("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
 
+        # self.emb_formant1 = nn.Embedding(256, gin_channels)
+        # self.emb_formant2 = nn.Embedding(256, gin_channels)
+        # self.emb_formant3 = nn.Embedding(256, gin_channels)
+
     @staticmethod
     def _set_cond_input(aux_input: dict):
         """Set the speaker conditioning input based on the multi-speaker mode."""
@@ -827,11 +822,14 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         cf3[pitch==1]=1
 
         sid, g, = self._set_cond_input(aux_input)
+        #sid = sid.unsqueeze(-1).repeat(1, cf1.shape[-1])
 
         if not self.use_d_vectors:
             g = self.emb_g(sid).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
         else:
             g = self.emb_g(g).unsqueeze(-1)
+        
+        # g = g + self.emb_formant1(cf1) + self.emb_formant2(cf2) + self.emb_formant3(cf3)
 
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(cf1,cf2,cf3))
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
@@ -850,9 +848,9 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
 
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    def infer(self, phone, phone_lengths, pitch, nsff0, sid, formants, max_len=None):
+    def infer(self, phone, phone_lengths, pitch, nsff0, sid, formants, coarse_formants, max_len=None):
         g = self.emb_g(sid).unsqueeze(-1)
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=coarse_formants)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
         o = self.dec((z * x_mask)[:, :, :max_len], nsff0, formants=formants, g=g)

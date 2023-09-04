@@ -159,7 +159,7 @@ def run(rank, n_gpus, hps):
         collate_fn = TextAudioCollate()
     train_loader = DataLoader(
         train_dataset,
-        num_workers=4,
+        num_workers=1,
         shuffle=False,
         pin_memory=True,
         collate_fn=collate_fn,
@@ -275,6 +275,10 @@ def run(rank, n_gpus, hps):
             tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
             tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
             tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+
+            # tmp["emb_formant1.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
+            # tmp["emb_formant2.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
+            # tmp["emb_formant3.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
 
             print(
                 net_g.module.load_state_dict(
