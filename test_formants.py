@@ -24,7 +24,7 @@ pitch_feature = PitchFeatureInput()
 formant_list = []
 pitch_list = []
 for source in sources:
-    formant_list.append(formant_feature.compute_formants(source))
+    formant_list.append(formant_feature.compute_formants(source)[0][:3])
     pitch_list.append(pitch_feature.compute_f0(source, "crepe", 160))
 
 print("formant mean table:")

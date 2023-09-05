@@ -3,8 +3,6 @@ from my_utils import load_audio
 import numpy as np
 import os, sys, traceback, math
 import logging
-from scipy.interpolate import interp1d
-from extract_f0_print import FeatureInput as PitchFeatureInput
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -29,6 +27,12 @@ class FeatureInput(object):
         self.fs = samplerate
         self.hop = hop_size
 
+        self.formant_bin = 256
+        self.formant_max = 6500.0
+        self.formant_min = 50.0
+        self.formant_mel_min = 1127 * np.log(1 + self.formant_min / 700)
+        self.formant_mel_max = 1127 * np.log(1 + self.formant_max / 700)
+
     def get_formant_values(self, formant_obj, track, p_len=None):
         formant_values = []
         for time_step in formant_obj.xs():
@@ -36,12 +40,6 @@ class FeatureInput(object):
             if math.isnan(value):
                 value = 0
             formant_values.append(value)
-        
-        formant_values = np.asarray(formant_values)
-        if len(formant_values[formant_values == 0])>0 and len(formant_values[formant_values != 0]) > 0:
-            x_values = np.arange(len(formant_values))
-            interpolator = interp1d(x_values[formant_values != 0], formant_values[formant_values != 0], kind='linear', fill_value=0, bounds_error=False)
-            formant_values = interpolator(x_values)
 
         if p_len:
             pad_size = (p_len - len(formant_values) + 1) // 2
@@ -49,12 +47,16 @@ class FeatureInput(object):
                 formant_values = np.pad(
                     formant_values, [[pad_size, p_len - len(formant_values) - pad_size]], mode="constant"
                 )
-
         return formant_values
 
-    def compute_formant_objects(self, data, time_step, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
+    def compute_formants(self, path, max_number_of_formants=5.5, maximum_formant=6500, pre_emphasis_from=50):
+        x = load_audio(path, self.fs)
+
+        p_len = x.shape[0] // self.hop
+
+        time_step = self.hop / self.fs
         formant = (
-            parselmouth.Sound(data, self.fs)
+            parselmouth.Sound(x, self.fs)
             .to_formant_burg(
                 time_step=time_step, 
                 max_number_of_formants=max_number_of_formants, 
@@ -64,78 +66,30 @@ class FeatureInput(object):
             )
         )
 
-        return formant
+        f1 = self.get_formant_values(formant, 1, p_len)
+        f2 = self.get_formant_values(formant, 2, p_len)
+        f3 = self.get_formant_values(formant, 3, p_len)
+        f4 = self.get_formant_values(formant, 4, p_len)
+        f5 = self.get_formant_values(formant, 5, p_len)
+
+        # import pdb; pdb.set_trace()
+
+        return f1, f2, f3, f4, f5
     
-    def compute_formants(self, path, max_number_of_formants=5.5, maximum_formant=None, pre_emphasis_from=50):
-        x = load_audio(path, self.fs)
-        p_len = x.shape[0] // self.hop
-        time_step = self.hop / self.fs
-
-        if not maximum_formant:
-            pitch_feature = PitchFeatureInput()
-            f0 = pitch_feature.compute_f0(path, "crepe", 160)
-            formant_object, ceiling = self.find_optimal_ceiling(x, p_len, time_step, silence_indicator=f0, max_number_of_formants=max_number_of_formants, pre_emphasis_from=pre_emphasis_from)
-        else:
-            formant_object = self.compute_formant_objects(x, time_step, max_number_of_formants, maximum_formant, pre_emphasis_from)
-            ceiling=maximum_formant
-
-        f1 = self.get_formant_values(formant_object, 1, p_len)
-        f2 = self.get_formant_values(formant_object, 2, p_len)
-        f3 = self.get_formant_values(formant_object, 3, p_len)
-        f4 = self.get_formant_values(formant_object, 4, p_len)
-        f5 = self.get_formant_values(formant_object, 5, p_len)
-
-        return (f1, f2, f3, f4, f5), ceiling
-    
-    def find_optimal_ceiling(self, data, p_len, time_step, silence_indicator=None, max_number_of_formants=5.5, pre_emphasis_from=50):
-        best_formant_obj = None
-        optimal_ceiling=None
-        lowest_var = None
-
-        for ceiling in range(5000, 6500, 10):
-            formant_obj = self.compute_formant_objects(data, time_step, max_number_of_formants=max_number_of_formants, maximum_formant=ceiling, pre_emphasis_from=pre_emphasis_from)
-            f1 = self.get_formant_values(formant_obj, 1, p_len)
-            f2 = self.get_formant_values(formant_obj, 2, p_len)
-            if silence_indicator is not None:
-                f1[silence_indicator[:f1.shape[0]]==0] = 0
-                f2[silence_indicator[:f2.shape[0]]==0] = 0
-                f1 = f1[f1!=0]
-                f2 = f2[f2!=0]
-            var = np.var(np.log(f1))+np.var(np.log(f2))
-            if lowest_var==None or var<lowest_var:
-                print(f"Found a new minimum with var {var} and ceiling {ceiling}")
-                lowest_var = var
-                optimal_ceiling = ceiling
-                best_formant_obj = formant_obj
-            elif np.abs(lowest_var-var)<0.001 and ceiling>optimal_ceiling:
-                print(f"Found a new minimum with var {var} and ceiling {ceiling} with better ceiling but slightly worse var")
-                lowest_var = var
-                optimal_ceiling = ceiling
-                best_formant_obj = formant_obj
-
-        return best_formant_obj, optimal_ceiling
-    
-    def coarse_formant(self, fN, formant_max=5500):
-        formant_bin = 256
-        formant_min = 50.0
-        formant_mel_min = 1127 * np.log(1 + formant_min / 700)
-        formant_mel_max = 1127 * np.log(1 + formant_max / 700)
-
+    def coarse_formant(self, fN):
         formant_mel = 1127 * np.log(1 + fN / 700)
-        formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - formant_mel_min) * (
-            formant_bin - 2
-        ) / (formant_mel_max - formant_mel_min) + 1
+        formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - self.formant_mel_min) * (
+            self.formant_bin - 2
+        ) / (self.formant_mel_max - self.formant_mel_min) + 1
 
         # use 0 or 1
         formant_mel[formant_mel <= 1] = 1
-        formant_mel[formant_mel > formant_bin - 1] = formant_bin - 1
+        formant_mel[formant_mel > self.formant_bin - 1] = self.formant_bin - 1
         formant_coarse = np.rint(formant_mel).astype(int)
-
         assert formant_coarse.max() <= 255 and formant_coarse.min() >= 1, (
             formant_coarse.max(),
             formant_coarse.min(),
         )
-
         return formant_coarse
     
     def go(self, paths):
@@ -152,13 +106,13 @@ class FeatureInput(object):
                         os.path.exists(formants_path + ".npy") == True
                     ):
                         continue
-                    featur_pit, ceiling = self.compute_formants(inp_path, 5500)
+                    featur_pit = self.compute_formants(inp_path)
                     np.save(
                         formants_path,
                         featur_pit,
                         allow_pickle=False,
                     )
-                    coarse_pit = [self.coarse_formant(fN, ceiling) for fN in featur_pit]
+                    coarse_pit = [self.coarse_formant(fN) for fN in featur_pit]
                     np.save(
                         coarse_formants_path,
                         coarse_pit,
