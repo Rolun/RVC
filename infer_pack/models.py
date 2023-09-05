@@ -88,19 +88,27 @@ class TextEncoder768(nn.Module):
             self.emb_formant1 = nn.Embedding(256, hidden_channels)
             self.emb_formant2 = nn.Embedding(256, hidden_channels)
             self.emb_formant3 = nn.Embedding(256, hidden_channels)
+            # self.emb_formant4 = nn.Embedding(256, hidden_channels)
+            # self.emb_formant5 = nn.Embedding(256, hidden_channels)
         self.encoder = attentions.Encoder(
             hidden_channels, filter_channels, n_heads, n_layers, kernel_size, p_dropout
         )
         self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
-    def forward(self, phone, pitch, lengths, coarse_formants = (None, None, None)):
+    def forward(self, phone, pitch, lengths, coarse_formants = (None,None,None,None,None)):
         if pitch == None:
             x = self.emb_phone(phone)
         else:
             x = self.emb_phone(phone) + self.emb_pitch(pitch)
 
         if coarse_formants[0] != None:
-            x = x + self.emb_formant1(coarse_formants[0]) + self.emb_formant2(coarse_formants[1]) + self.emb_formant3(coarse_formants[2])
+            x = x 
+            + self.emb_formant1(coarse_formants[0]) 
+            + self.emb_formant2(coarse_formants[1]) 
+            + self.emb_formant3(coarse_formants[2])
+            # + self.emb_formant4(coarse_formants[3])
+            # + self.emb_formant5(coarse_formants[4])
+
 
         x = x * math.sqrt(self.hidden_channels)  # [b, t, h]
         x = self.lrelu(x)
@@ -510,14 +518,14 @@ class GeneratorNSF(torch.nn.Module):
         self.upp = np.prod(upsample_rates)
         self.sr = sr
 
-    def forward(self, x, f0, formants=(None, None, None), g=None):
+    def forward(self, x, f0, formants=(None, None, None, None, None), g=None):
         har_source, noi_source, uv = self.m_source(f0, self.upp)
-        har_source_f1, _, _ = self.m_source(formants[0], self.upp)
-        har_source_f2, _, _ = self.m_source(formants[1], self.upp)
-        har_source_f3, _, _ = self.m_source(formants[2], self.upp)
+        # har_source_f1, _, _ = self.m_source(formants[0], self.upp)
+        # har_source_f2, _, _ = self.m_source(formants[1], self.upp)
+        # har_source_f3, _, _ = self.m_source(formants[2], self.upp)
         
         har_source = har_source.transpose(1, 2)
-        formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
+        # formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
         x = self.conv_pre(x)
         if g is not None:
             x = x + self.cond(g)
@@ -525,7 +533,7 @@ class GeneratorNSF(torch.nn.Module):
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
             x = self.ups[i](x)
-            x_source = self.noise_convs[i](har_source+formant_source)
+            x_source = self.noise_convs[i](har_source)
             # x_formants = self.formant_convs[i](formant_source)
 
             x = x + x_source #+ x_formants
@@ -817,9 +825,13 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         f1[pitchf==0]=0
         f2[pitchf==0]=0
         f3[pitchf==0]=0
+        # f4[pitchf==0]=0
+        # f5[pitchf==0]=0
         cf1[pitch==1]=1
         cf2[pitch==1]=1
         cf3[pitch==1]=1
+        # cf4[pitch==1]=1
+        # cf5[pitch==1]=1
 
         sid, g, = self._set_cond_input(aux_input)
         #sid = sid.unsqueeze(-1).repeat(1, cf1.shape[-1])
@@ -842,6 +854,8 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         f1 = commons.slice_segments2(f1, ids_slice, self.segment_size)
         f2 = commons.slice_segments2(f2, ids_slice, self.segment_size)
         f3 = commons.slice_segments2(f3, ids_slice, self.segment_size)
+        # f4 = commons.slice_segments2(f4, ids_slice, self.segment_size)
+        # f5 = commons.slice_segments2(f5, ids_slice, self.segment_size)
 
         # print(-2,pitchf.shape,z_slice.shape)
         o = self.dec(z_slice, pitchf, formants=(f1,f2,f3), g=g)

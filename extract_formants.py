@@ -3,6 +3,7 @@ from my_utils import load_audio
 import numpy as np
 import os, sys, traceback, math
 import logging
+from scipy.interpolate import interp1d
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -40,6 +41,12 @@ class FeatureInput(object):
             if math.isnan(value):
                 value = 0
             formant_values.append(value)
+        
+        formant_values = np.asarray(formant_values)
+        if len(formant_values[formant_values == 0])>0 and len(formant_values[formant_values != 0]) > 0:
+            x_values = np.arange(len(formant_values))
+            interpolator = interp1d(x_values[formant_values != 0], formant_values[formant_values != 0], kind='linear', fill_value=0, bounds_error=False)
+            formant_values = interpolator(x_values)
 
         if p_len:
             pad_size = (p_len - len(formant_values) + 1) // 2
@@ -47,6 +54,7 @@ class FeatureInput(object):
                 formant_values = np.pad(
                     formant_values, [[pad_size, p_len - len(formant_values) - pad_size]], mode="constant"
                 )
+
         return formant_values
 
     def compute_formants(self, path, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
@@ -69,10 +77,10 @@ class FeatureInput(object):
         f1 = self.get_formant_values(formant, 1, p_len)
         f2 = self.get_formant_values(formant, 2, p_len)
         f3 = self.get_formant_values(formant, 3, p_len)
+        f4 = self.get_formant_values(formant, 4, p_len)
+        f5 = self.get_formant_values(formant, 5, p_len)
 
-        # import pdb; pdb.set_trace()
-
-        return f1, f2, f3
+        return f1, f2, f3, f4, f5
     
     def coarse_formant(self, fN):
         formant_mel = 1127 * np.log(1 + fN / 700)
@@ -84,10 +92,12 @@ class FeatureInput(object):
         formant_mel[formant_mel <= 1] = 1
         formant_mel[formant_mel > self.formant_bin - 1] = self.formant_bin - 1
         formant_coarse = np.rint(formant_mel).astype(int)
+
         assert formant_coarse.max() <= 255 and formant_coarse.min() >= 1, (
             formant_coarse.max(),
             formant_coarse.min(),
         )
+
         return formant_coarse
     
     def go(self, paths):
@@ -140,11 +150,12 @@ if __name__ == "__main__":
 
     ps = []
 
-    p = Process(
-        target=featureInput.go,
-        args=(
-            [paths]
-        ),
-    )
-    ps.append(p)
-    p.start()
+    featureInput.go(paths)
+    # p = Process(
+    #     target=featureInput.go,
+    #     args=(
+    #         [paths]
+    #     ),
+    # )
+    # ps.append(p)
+    # p.start()

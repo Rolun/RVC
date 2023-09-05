@@ -275,6 +275,8 @@ def run(rank, n_gpus, hps):
             tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
             tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
             tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
             # tmp["emb_formant1.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
             # tmp["emb_formant2.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
@@ -388,9 +390,13 @@ def train_and_evaluate(
                             f1,
                             f2,
                             f3,
+                            # f4,
+                            # f5,
                             cf1,
                             cf2,
                             cf3,
+                            # cf4,
+                            # cf5,
                             sid,
                         ) = info
                 else:
@@ -413,9 +419,13 @@ def train_and_evaluate(
                         f1 = f1.cuda(rank, non_blocking=True)
                         f2 = f2.cuda(rank, non_blocking=True)
                         f3 = f3.cuda(rank, non_blocking=True)
+                        # f4 = f4.cuda(rank, non_blocking=True)
+                        # f5 = f5.cuda(rank, non_blocking=True)
                         cf1 = cf1.cuda(rank, non_blocking=True)
                         cf2 = cf2.cuda(rank, non_blocking=True)
                         cf3 = cf3.cuda(rank, non_blocking=True)
+                        # cf4 = cf4.cuda(rank, non_blocking=True)
+                        # cf5 = cf5.cuda(rank, non_blocking=True)
                     if hps.use_d_vectors:
                         d_vector = d_vector.cuda(rank, non_blocking=True)
                     sid = sid.cuda(rank, non_blocking=True)
@@ -459,9 +469,13 @@ def train_and_evaluate(
                                     f1,
                                     f2,
                                     f3,
+                                    # f4,
+                                    # f5,
                                     cf1,
                                     cf2,
                                     cf3,
+                                    # cf4,
+                                    # cf5,
                                     sid,
                                 ),
                             )
@@ -520,9 +534,13 @@ def train_and_evaluate(
                     f1,
                     f2,
                     f3,
+                    # f4,
+                    # f5,
                     cf1,
                     cf2,
                     cf3,
+                    # cf4,
+                    # cf5,
                     sid,
                 ) = info
         else:
@@ -537,9 +555,13 @@ def train_and_evaluate(
                 f1 = f1.cuda(rank, non_blocking=True)
                 f2 = f2.cuda(rank, non_blocking=True)
                 f3 = f3.cuda(rank, non_blocking=True)
+                # f4 = f4.cuda(rank, non_blocking=True)
+                # f5 = f5.cuda(rank, non_blocking=True)
                 cf1 = cf1.cuda(rank, non_blocking=True)
                 cf2 = cf2.cuda(rank, non_blocking=True)
                 cf3 = cf3.cuda(rank, non_blocking=True)
+                # cf4 = cf4.cuda(rank, non_blocking=True)
+                # cf5 = cf5.cuda(rank, non_blocking=True)
             if hps.use_d_vectors:
                 d_vector = d_vector.cuda(rank, non_blocking=True)
             sid = sid.cuda(rank, non_blocking=True)
