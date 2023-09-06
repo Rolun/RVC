@@ -3,6 +3,7 @@ from my_utils import load_audio
 import numpy as np
 import os, sys, traceback, math
 import logging
+from scipy.interpolate import interp1d
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -28,7 +29,7 @@ class FeatureInput(object):
         self.hop = hop_size
 
         self.formant_bin = 256
-        self.formant_max = 6500.0
+        self.formant_max = 5500.0
         self.formant_min = 50.0
         self.formant_mel_min = 1127 * np.log(1 + self.formant_min / 700)
         self.formant_mel_max = 1127 * np.log(1 + self.formant_max / 700)
@@ -41,6 +42,12 @@ class FeatureInput(object):
                 value = 0
             formant_values.append(value)
 
+        formant_values = np.asarray(formant_values)
+        if len(formant_values[formant_values == 0])>0 and len(formant_values[formant_values != 0]) > 0:
+            x_values = np.arange(len(formant_values))
+            interpolator = interp1d(x_values[formant_values != 0], formant_values[formant_values != 0], kind='linear', fill_value=0, bounds_error=False)
+            formant_values = interpolator(x_values)
+
         if p_len:
             pad_size = (p_len - len(formant_values) + 1) // 2
             if pad_size > 0 or p_len - len(formant_values) - pad_size > 0:
@@ -49,7 +56,7 @@ class FeatureInput(object):
                 )
         return formant_values
 
-    def compute_formants(self, path, max_number_of_formants=5.5, maximum_formant=6500, pre_emphasis_from=50):
+    def compute_formants(self, path, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
         x = load_audio(path, self.fs)
 
         p_len = x.shape[0] // self.hop

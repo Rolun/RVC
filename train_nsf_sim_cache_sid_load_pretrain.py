@@ -272,11 +272,24 @@ def run(rank, n_gpus, hps):
 
             # Formant hidden layers for the text encoder
             
-            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmplin1 = nn.Linear(1, hps.model.hidden_channels)
+            tmplin2 = nn.Linear(1, hps.model.hidden_channels)
+            tmplin3 = nn.Linear(1, hps.model.hidden_channels)
+            tmplin4 = nn.Linear(1, hps.model.hidden_channels)
+            tmp["enc_p.emb_formant1.weight"] = tmplin1.weight.data
+            tmp["enc_p.emb_formant1.bias"] = tmplin1.bias.data
+            tmp["enc_p.emb_formant2.weight"] = tmplin2.weight.data
+            tmp["enc_p.emb_formant2.bias"] = tmplin2.bias.data
+            tmp["enc_p.emb_formant3.weight"] = tmplin3.weight.data
+            tmp["enc_p.emb_formant3.bias"] = tmplin3.bias.data
+            tmp["enc_p.emb_formant4.weight"] = tmplin4.weight.data
+            tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
+
+            # tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
             # tmp["emb_formant1.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
             # tmp["emb_formant2.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
@@ -416,10 +429,10 @@ def train_and_evaluate(
                     if hps.if_f0 == 1:
                         pitch = pitch.cuda(rank, non_blocking=True)
                         pitchf = pitchf.cuda(rank, non_blocking=True)
-                        f1 = f1.cuda(rank, non_blocking=True)
-                        f2 = f2.cuda(rank, non_blocking=True)
-                        f3 = f3.cuda(rank, non_blocking=True)
-                        f4 = f4.cuda(rank, non_blocking=True)
+                        f1 = (f1/5500).cuda(rank, non_blocking=True)
+                        f2 = (f2/5500).cuda(rank, non_blocking=True)
+                        f3 = (f3/5500).cuda(rank, non_blocking=True)
+                        f4 = (f4/5500).cuda(rank, non_blocking=True)
                         f5 = f5.cuda(rank, non_blocking=True)
                         cf1 = cf1.cuda(rank, non_blocking=True)
                         cf2 = cf2.cuda(rank, non_blocking=True)
@@ -588,7 +601,7 @@ def train_and_evaluate(
                         x_mask,
                         z_mask,
                         (z, z_p, m_p, logs_p, m_q, logs_q),
-                    ) = net_g(phone, phone_lengths, pitch, pitchf, (f1, f2, f3, f4, f5),(cf1, cf2, cf3, cf4, cf5), spec, spec_lengths, aux_input={"d_vectors": None, "speaker_ids": sid})
+                    ) = net_g(phone, phone_lengths, pitch, pitchf, f1, f2, f3, f4, spec, spec_lengths, aux_input={"d_vectors": None, "speaker_ids": sid})
             else:
                 (
                     y_hat,

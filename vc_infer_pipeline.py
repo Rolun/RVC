@@ -8,6 +8,7 @@ import pyworld, os, traceback, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
 import math
+from scipy.interpolate import interp1d
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
@@ -249,6 +250,8 @@ class VC(object):
         formant_mel_min = 1127 * np.log(1 + formant_min / 700)
         formant_mel_max = 1127 * np.log(1 + formant_max / 700)
 
+        fN[fN<0]=0
+
         formant_mel = 1127 * np.log(1 + fN / 700)
         formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - formant_mel_min) * (
             formant_bin - 2
@@ -271,6 +274,12 @@ class VC(object):
             if math.isnan(value):
                 value = 0
             formant_values.append(value)
+
+        formant_values = np.asarray(formant_values)
+        if len(formant_values[formant_values == 0])>0 and len(formant_values[formant_values != 0]) > 0:
+            x_values = np.arange(len(formant_values))
+            interpolator = interp1d(x_values[formant_values != 0], formant_values[formant_values != 0], kind='linear', fill_value=0, bounds_error=False)
+            formant_values = interpolator(x_values)
         
         if p_len:
             pad_size = (p_len - len(formant_values) + 1) // 2
@@ -278,6 +287,7 @@ class VC(object):
                 formant_values = np.pad(
                     formant_values, [[pad_size, p_len - len(formant_values) - pad_size]], mode="constant"
                 )
+
         return formant_values
 
     def get_formants(self, x, p_len, formant_shift, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
@@ -297,17 +307,24 @@ class VC(object):
         f1 = self.get_formant_values(formant, 1, p_len)
         f2 = self.get_formant_values(formant, 2, p_len)
         f3 = self.get_formant_values(formant, 3, p_len)
+        f4 = self.get_formant_values(formant, 4, p_len)
+        f5 = self.get_formant_values(formant, 5, p_len)
 
-        formant_shift_diff=f1*(1-formant_shift)
-        f1-=formant_shift_diff
-        f2-=formant_shift_diff
-        f3-=formant_shift_diff
+        # formant_shift_diff=f1*(1-formant_shift)
+        # f1-=formant_shift_diff
+        # f2-=formant_shift_diff
+        # f3-=formant_shift_diff
+        # f4-=formant_shift_diff
+        # f5-=formant_shift_diff
+        f3*=formant_shift
 
         cf1 = self.coarse_formant(f1)
         cf2 = self.coarse_formant(f2)
         cf3 = self.coarse_formant(f3)
+        cf4 = self.coarse_formant(f4)
+        cf5 = self.coarse_formant(f5)
 
-        return (f1, f2, f3, cf1, cf2, cf3)
+        return (f1, f2, f3, f4, f5, cf1, cf2, cf3, cf4, cf5)
 
     def get_f0(
         self,
@@ -857,20 +874,28 @@ class VC(object):
             pitchf = pitchf[:p_len]
             if self.device == "mps":
                 pitchf = pitchf.astype(np.float32)
-
-            f1, f2, f3, cf1, cf2, cf3 = self.get_formants(audio_pad, p_len, formant_shift)
+            
+            f1, f2, f3, f4, f5, cf1, cf2, cf3, cf4, cf5 = self.get_formants(audio_pad, p_len, formant_shift)
             f1 = f1[:p_len]
             f2 = f2[:p_len]
             f3 = f3[:p_len]
+            f4 = f4[:p_len]
+            f5 = f5[:p_len]
             f1[pitchf==0]=0
             f2[pitchf==0]=0
             f3[pitchf==0]=0
+            f4[pitchf==0]=0
+            f5[pitchf==0]=0
             cf1 = cf1[:p_len]
             cf2 = cf2[:p_len]
             cf3 = cf3[:p_len]
+            cf4 = cf4[:p_len]
+            cf5 = cf5[:p_len]
             cf1[pitch==1]=1
             cf2[pitch==1]=1
             cf3[pitch==1]=1
+            cf4[pitch==1]=1
+            cf5[pitch==1]=1
 
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
@@ -878,9 +903,13 @@ class VC(object):
             f1 = torch.tensor(f1, device=self.device).unsqueeze(0).float()
             f2 = torch.tensor(f2, device=self.device).unsqueeze(0).float()
             f3 = torch.tensor(f3, device=self.device).unsqueeze(0).float()
+            f4 = torch.tensor(f4, device=self.device).unsqueeze(0).float()
+            f5 = torch.tensor(f5, device=self.device).unsqueeze(0).float()
             cf1 = torch.tensor(cf1, device=self.device).unsqueeze(0).long()
             cf2 = torch.tensor(cf2, device=self.device).unsqueeze(0).long()
             cf3 = torch.tensor(cf3, device=self.device).unsqueeze(0).long()
+            cf4 = torch.tensor(cf4, device=self.device).unsqueeze(0).long()
+            cf5 = torch.tensor(cf5, device=self.device).unsqueeze(0).long()
 
             
 
@@ -926,8 +955,8 @@ class VC(object):
                         version,
                         protect,
                         function,
-                        (f1,f2,f3),
-                        (cf1,cf2,cf3)
+                        (f1,f2,f3,f4,f5),
+                        (cf1,cf2,cf3,cf4,cf5)
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             else:
@@ -969,8 +998,8 @@ class VC(object):
                     version,
                     protect,
                     function,
-                    (f1,f2,f3),
-                    (cf1,cf2,cf3)
+                    (f1,f2,f3,f4,f5),
+                    (cf1,cf2,cf3,cf4,cf5)
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         else:
@@ -1077,8 +1106,8 @@ class VC(object):
                 + (1 - index_rate) * feats
             )
         
-        f1, f2, f3 = formants
-        cf1, cf2, cf3 = coarse_formants
+        f1, f2, f3, f4, f5 = formants
+        cf1, cf2, cf3, cf4, cf5 = coarse_formants
 
         feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
         if protect < 0.5:
@@ -1095,9 +1124,13 @@ class VC(object):
                 f1 = f1[:, :p_len]
                 f2 = f2[:, :p_len]
                 f3 = f3[:, :p_len]
+                f4 = f4[:, :p_len]
+                f5 = f5[:, :p_len]
                 cf1 = cf1[:, :p_len]
                 cf2 = cf2[:, :p_len]
                 cf3 = cf3[:, :p_len]
+                cf4 = cf4[:, :p_len]
+                cf5 = cf5[:, :p_len]
 
         if protect < 0.5:
             pitchff = pitchf.clone()
