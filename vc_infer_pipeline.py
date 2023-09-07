@@ -290,7 +290,7 @@ class VC(object):
 
         return formant_values
 
-    def get_formants(self, x, p_len, formant_shift, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
+    def get_formants(self, x, p_len, formant_shift, formant_to_shift=0, max_number_of_formants=5.5, maximum_formant=5500, pre_emphasis_from=50):
         time_step = self.window / self.sr
 
         formant = (
@@ -310,13 +310,24 @@ class VC(object):
         f4 = self.get_formant_values(formant, 4, p_len)
         f5 = self.get_formant_values(formant, 5, p_len)
 
-        # formant_shift_diff=f1*(1-formant_shift)
-        # f1-=formant_shift_diff
-        # f2-=formant_shift_diff
-        # f3-=formant_shift_diff
-        # f4-=formant_shift_diff
-        # f5-=formant_shift_diff
-        f3*=formant_shift
+        print(f"Shifting formant {formant_to_shift} with a factor of {formant_shift}")
+        if formant_to_shift==0:
+            formant_shift_diff=f1*(1-formant_shift)
+            f1-=formant_shift_diff
+            f2-=formant_shift_diff
+            f3-=formant_shift_diff
+            f4-=formant_shift_diff
+            f5-=formant_shift_diff
+        elif formant_to_shift==1:
+            f1*=formant_shift
+        elif formant_to_shift==2:
+            f2*=formant_shift
+        elif formant_to_shift==3:
+            f3*=formant_shift
+        elif formant_to_shift==4:
+            f4*=formant_shift
+        elif formant_to_shift==5:
+            f5*=formant_shift
 
         cf1 = self.coarse_formant(f1)
         cf2 = self.coarse_formant(f2)
@@ -794,6 +805,7 @@ class VC(object):
         input_audio=None,
         filter_radius=None,
         formant_shift=1,
+        formant_to_shift=0,
     ):
         if (
             file_index != ""
@@ -875,7 +887,7 @@ class VC(object):
             if self.device == "mps":
                 pitchf = pitchf.astype(np.float32)
             
-            f1, f2, f3, f4, f5, cf1, cf2, cf3, cf4, cf5 = self.get_formants(audio_pad, p_len, formant_shift)
+            f1, f2, f3, f4, f5, cf1, cf2, cf3, cf4, cf5 = self.get_formants(audio_pad, p_len, formant_shift, formant_to_shift=formant_to_shift)
             f1 = f1[:p_len]
             f2 = f2[:p_len]
             f3 = f3[:p_len]
@@ -897,13 +909,18 @@ class VC(object):
             cf4[pitch==1]=1
             cf5[pitch==1]=1
 
+            f1 = f1
+            f2 = f2
+            f3 = f3
+            f4 = f4
+
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
             
-            f1 = torch.tensor(f1, device=self.device).unsqueeze(0).float()
-            f2 = torch.tensor(f2, device=self.device).unsqueeze(0).float()
-            f3 = torch.tensor(f3, device=self.device).unsqueeze(0).float()
-            f4 = torch.tensor(f4, device=self.device).unsqueeze(0).float()
+            f1 = torch.tensor(f1, device=self.device).unsqueeze(0).half()
+            f2 = torch.tensor(f2, device=self.device).unsqueeze(0).half()
+            f3 = torch.tensor(f3, device=self.device).unsqueeze(0).half()
+            f4 = torch.tensor(f4, device=self.device).unsqueeze(0).half()
             f5 = torch.tensor(f5, device=self.device).unsqueeze(0).float()
             cf1 = torch.tensor(cf1, device=self.device).unsqueeze(0).long()
             cf2 = torch.tensor(cf2, device=self.device).unsqueeze(0).long()
@@ -1145,7 +1162,7 @@ class VC(object):
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, sid, (f1, f2, f3), (cf1, cf2, cf3))[0][0, 0])
+                        (net_g.infer(feats, p_len, pitch, pitchf, sid, f1, f2, f3, f4)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()

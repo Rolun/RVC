@@ -854,12 +854,12 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
 
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    def infer(self, phone, phone_lengths, pitch, nsff0, sid, formants, coarse_formants, max_len=None):
+    def infer(self, phone, phone_lengths, pitch, nsff0, sid, f1, f2, f3, f4, max_len=None):
         g = self.emb_g(sid).unsqueeze(-1)
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=coarse_formants)
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(f1,f2,f3,f4))
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
-        o = self.dec((z * x_mask)[:, :, :max_len], nsff0, formants=formants, g=g)
+        o = self.dec((z * x_mask)[:, :, :max_len], nsff0, g=g)
         return o, x_mask, (z, z_p, m_p, logs_p)
     
     def infer_sembedding(self, sid):
