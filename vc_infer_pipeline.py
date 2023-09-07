@@ -909,11 +909,6 @@ class VC(object):
             cf4[pitch==1]=1
             cf5[pitch==1]=1
 
-            f1 = f1
-            f2 = f2
-            f3 = f3
-            f4 = f4
-
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
             

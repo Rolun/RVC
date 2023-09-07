@@ -183,7 +183,7 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-encoder-4f-scaled_e250_s23500.pth" #merged3_e185_s8880.pth
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-encoder-coninuous_e250_s23500.pth" #merged3_e185_s8880.pth
 input_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"
 f0method = "mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
@@ -378,7 +378,7 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 
 
 
-generate(0, function="infer_sid", f0up_key=0, formant_shift=1.5, output_path="test_stuff/formant_test_encoder_all_scaled-1.5.wav")
+generate(0, function="infer_sid", f0up_key=0, formant_shift=1, output_path="test_stuff/formant_test_encoder_all_continuous-1.wav")
 
 # for i in range(1,5):
 #     generate(1, function="infer_sid", f0up_key=0, formant_shift=0.7, formant_to_shift=i, output_path=f"test_stuff/formant_test_encoder_all_scaled_f{i}-0.7-sid1.wav")
