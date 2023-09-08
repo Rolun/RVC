@@ -3,20 +3,20 @@ from extract_f0_print import FeatureInput as PitchFeatureInput
 import numpy as np
 import matplotlib.pyplot as plt
 
-# sources = [
-#     "C:/Users/lundb/Documents/Other/Music/i.wav", # GT
-#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_i_0.7.wav", 
-#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_i_1.wav",
-#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_i_1.5.wav",
-#     ]
-
 sources = [
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav", # GT
-    # "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_0.7_short.wav", 
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_1_short.wav",
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_f-5_1.wav",
-    # "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_1.5_short.wav",
+    "C:/Users/lundb/Documents/Other/Music/i.wav", # GT
+    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-0.7.wav", 
+    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-1.wav",
+    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-1.5.wav",
     ]
+
+# sources = [
+#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav", # GT
+#     # "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_0.7_short.wav", 
+#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_1_short.wav",
+#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_f-5_1.wav",
+#     # "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_all_1.5_short.wav",
+#     ]
 
 formant_feature = FormantFeatureInput()
 pitch_feature = PitchFeatureInput()
@@ -24,7 +24,7 @@ pitch_feature = PitchFeatureInput()
 formant_list = []
 pitch_list = []
 for source in sources:
-    formant_list.append(formant_feature.compute_formants(source)[0][:3])
+    formant_list.append(formant_feature.compute_formants(source))
     pitch_list.append(pitch_feature.compute_f0(source, "crepe", 160))
 
 print("formant mean table:")

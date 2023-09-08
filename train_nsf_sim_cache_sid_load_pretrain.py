@@ -50,10 +50,8 @@ from infer_pack import commons
 from time import sleep
 from time import time as ttime
 from data_utils import (
-    TextAudioLoaderMultiNSFdv,
     TextAudioLoaderMultiNSFsid,
     TextAudioLoader,
-    TextAudioCollateMultiNSFdv,
     TextAudioCollateMultiNSFsid,
     TextAudioCollate,
     DistributedBucketSampler,
@@ -132,10 +130,7 @@ def run(rank, n_gpus, hps):
         torch.cuda.set_device(rank)
 
     if hps.if_f0 == 1:
-        if hps.use_d_vectors:
-            train_dataset = TextAudioLoaderMultiNSFdv(hps.data.training_files, hps.data)
-        else:
-            train_dataset = TextAudioLoaderMultiNSFsid(hps.data.training_files, hps.data)
+        train_dataset = TextAudioLoaderMultiNSFsid(hps.data.training_files, hps.data)
     else:
         train_dataset = TextAudioLoader(hps.data.training_files, hps.data)
     train_sampler = DistributedBucketSampler(
@@ -151,10 +146,7 @@ def run(rank, n_gpus, hps):
     # It is possible that dataloader's workers are out of shared memory. Please try to raise your shared memory limit.
     # num_workers=8 -> num_workers=4
     if hps.if_f0 == 1:
-        if hps.use_d_vectors:
-            collate_fn = TextAudioCollateMultiNSFdv()
-        else:
-            collate_fn = TextAudioCollateMultiNSFsid()
+        collate_fn = TextAudioCollateMultiNSFsid()
     else:
         collate_fn = TextAudioCollate()
     train_loader = DataLoader(
@@ -235,12 +227,12 @@ def run(rank, n_gpus, hps):
                 logger.info("loaded pretrained %s" % (hps.pretrainG))
             tmp = torch.load(hps.pretrainG, map_location="cpu")["model"]
             if hps.use_d_vectors:
-                # del tmp['emb_g.weight']
+                del tmp['emb_g.weight']
                 # tmp["emb_g.weight"] = nn.Conv1d(256, 256, 1).weight.data
                 # tmp["emb_g.bias"] = nn.Conv1d(256, 256, 1).bias.data
-                tmplin = nn.Linear(256, 256)
-                tmp["emb_g.weight"] = tmplin.weight.data
-                tmp["emb_g.bias"] = tmplin.bias.data
+                # tmplin = nn.Linear(256, 256)
+                # tmp["emb_g.weight"] = tmplin.weight.data
+                # tmp["emb_g.bias"] = tmplin.bias.data
             else:
                 tmp["emb_g.weight"] = nn.Embedding(NUMBER_OF_SPEAKERS, 256).weight.data
 
@@ -291,10 +283,10 @@ def run(rank, n_gpus, hps):
             tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
-            tmp["dec.emb_formant1.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
-            tmp["dec.emb_formant2.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
-            tmp["dec.emb_formant3.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
-            tmp["dec.emb_formant4.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
+            # tmp["dec.emb_formant1.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
+            # tmp["dec.emb_formant2.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
+            # tmp["dec.emb_formant3.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
+            # tmp["dec.emb_formant4.weight"] = nn.Embedding(256, hps.model.upsample_initial_channel).weight.data
 
             # tmp["emb_formant1.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
             # tmp["emb_formant2.weight"] = nn.Embedding(256, hps.model.gin_channels).weight.data
@@ -382,41 +374,28 @@ def train_and_evaluate(
             for batch_idx, info in enumerate(train_loader):
                 # Unpack
                 if hps.if_f0 == 1:
-                    if hps.use_d_vectors:
-                        (
-                            phone,
-                            phone_lengths,
-                            pitch,
-                            pitchf,
-                            spec,
-                            spec_lengths,
-                            wave,
-                            wave_lengths,
-                            d_vector,
-                            sid,
-                        ) = info
-                    else:
-                        (
-                            phone,
-                            phone_lengths,
-                            pitch,
-                            pitchf,
-                            spec,
-                            spec_lengths,
-                            wave,
-                            wave_lengths,
-                            f1,
-                            f2,
-                            f3,
-                            f4,
-                            f5,
-                            cf1,
-                            cf2,
-                            cf3,
-                            cf4,
-                            cf5,
-                            sid,
-                        ) = info
+                    (
+                        phone,
+                        phone_lengths,
+                        pitch,
+                        pitchf,
+                        spec,
+                        spec_lengths,
+                        wave,
+                        wave_lengths,
+                        f1,
+                        f2,
+                        f3,
+                        f4,
+                        f5,
+                        cf1,
+                        cf2,
+                        cf3,
+                        cf4,
+                        cf5,
+                        d_vector,
+                        sid,
+                    ) = info
                 else:
                     (
                         phone,
@@ -444,8 +423,7 @@ def train_and_evaluate(
                         cf3 = cf3.cuda(rank, non_blocking=True)
                         cf4 = cf4.cuda(rank, non_blocking=True)
                         cf5 = cf5.cuda(rank, non_blocking=True)
-                    if hps.use_d_vectors:
-                        d_vector = d_vector.cuda(rank, non_blocking=True)
+                    d_vector = d_vector.cuda(rank, non_blocking=True)
                     sid = sid.cuda(rank, non_blocking=True)
                     spec = spec.cuda(rank, non_blocking=True)
                     spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
@@ -453,51 +431,33 @@ def train_and_evaluate(
                     wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
                 # Cache on list
                 if hps.if_f0 == 1:
-                    if hps.use_d_vectors:
-                        cache.append(
+                    cache.append(
+                        (
+                            batch_idx,
                             (
-                                batch_idx,
-                                (
-                                    phone,
-                                    phone_lengths,
-                                    pitch,
-                                    pitchf,
-                                    spec,
-                                    spec_lengths,
-                                    wave,
-                                    wave_lengths,
-                                    d_vector,
-                                    sid,
-                                ),
-                            )
+                                phone,
+                                phone_lengths,
+                                pitch,
+                                pitchf,
+                                spec,
+                                spec_lengths,
+                                wave,
+                                wave_lengths,
+                                f1,
+                                f2,
+                                f3,
+                                f4,
+                                f5,
+                                cf1,
+                                cf2,
+                                cf3,
+                                cf4,
+                                cf5,
+                                d_vector,
+                                sid,
+                            ),
                         )
-                    else:
-                        cache.append(
-                            (
-                                batch_idx,
-                                (
-                                    phone,
-                                    phone_lengths,
-                                    pitch,
-                                    pitchf,
-                                    spec,
-                                    spec_lengths,
-                                    wave,
-                                    wave_lengths,
-                                    f1,
-                                    f2,
-                                    f3,
-                                    f4,
-                                    f5,
-                                    cf1,
-                                    cf2,
-                                    cf3,
-                                    cf4,
-                                    cf5,
-                                    sid,
-                                ),
-                            )
-                        )
+                    )
                 else:
                     cache.append(
                         (
@@ -526,41 +486,28 @@ def train_and_evaluate(
         # Data
         ## Unpack
         if hps.if_f0 == 1:
-            if hps.use_d_vectors:
-                (
-                    phone,
-                    phone_lengths,
-                    pitch,
-                    pitchf,
-                    spec,
-                    spec_lengths,
-                    wave,
-                    wave_lengths,
-                    d_vector,
-                    sid,
-                ) = info
-            else:
-                (
-                    phone,
-                    phone_lengths,
-                    pitch,
-                    pitchf,
-                    spec,
-                    spec_lengths,
-                    wave,
-                    wave_lengths,
-                    f1,
-                    f2,
-                    f3,
-                    f4,
-                    f5,
-                    cf1,
-                    cf2,
-                    cf3,
-                    cf4,
-                    cf5,
-                    sid,
-                ) = info
+            (
+                phone,
+                phone_lengths,
+                pitch,
+                pitchf,
+                spec,
+                spec_lengths,
+                wave,
+                wave_lengths,
+                f1,
+                f2,
+                f3,
+                f4,
+                f5,
+                cf1,
+                cf2,
+                cf3,
+                cf4,
+                cf5,
+                d_vector,
+                sid,
+            ) = info
         else:
             phone, phone_lengths, spec, spec_lengths, wave, wave_lengths, sid = info
         ## Load on CUDA
@@ -580,8 +527,7 @@ def train_and_evaluate(
                 cf3 = cf3.cuda(rank, non_blocking=True)
                 cf4 = cf4.cuda(rank, non_blocking=True)
                 cf5 = cf5.cuda(rank, non_blocking=True)
-            if hps.use_d_vectors:
-                d_vector = d_vector.cuda(rank, non_blocking=True)
+            d_vector = d_vector.cuda(rank, non_blocking=True)
             sid = sid.cuda(rank, non_blocking=True)
             spec = spec.cuda(rank, non_blocking=True)
             spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
@@ -591,22 +537,13 @@ def train_and_evaluate(
         # Calculate
         with autocast(enabled=hps.train.fp16_run):
             if hps.if_f0 == 1:
-                if hps.use_d_vectors:
-                    (
-                        y_hat,
-                        ids_slice,
-                        x_mask,
-                        z_mask,
-                        (z, z_p, m_p, logs_p, m_q, logs_q),
-                    ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, aux_input={"d_vectors": d_vector, "speaker_ids": None})
-                else:
-                    (
-                        y_hat,
-                        ids_slice,
-                        x_mask,
-                        z_mask,
-                        (z, z_p, m_p, logs_p, m_q, logs_q),
-                    ) = net_g(phone, phone_lengths, pitch, pitchf, cf1, cf2, cf3, cf4, spec, spec_lengths, aux_input={"d_vectors": None, "speaker_ids": sid})
+                (
+                    y_hat,
+                    ids_slice,
+                    x_mask,
+                    z_mask,
+                    (z, z_p, m_p, logs_p, m_q, logs_q),
+                ) = net_g(phone, phone_lengths, pitch, pitchf, cf1, cf2, cf3, cf4, spec, spec_lengths, aux_input={"d_vectors": d_vector, "speaker_ids": sid})
             else:
                 (
                     y_hat,

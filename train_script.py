@@ -183,25 +183,21 @@ def extract_feature(gpus, n_p, f0method, if_f0, use_d_vectors, exp_dir, version1
     else:
         done1 = [True]
 
-    if use_d_vectors:
-        cmd = config.python_cmd + " create_d_vectors.py %s/logs/%s" % (
-            now_dir,
-            exp_dir,
-        )
-        print(cmd)
-        p = Popen(cmd, shell=True, cwd=now_dir)  # , stdin=PIPE, stdout=PIPE,stderr=PIPE
-        ###煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
-        done2 = [False]
-        threading.Thread(
-            target=if_done,
-            args=(
-                done2,
-                p,
-            ),
-        ).start()
-    else:
-        done2 = [True]
-
+    cmd = config.python_cmd + " create_d_vectors.py %s/logs/%s" % (
+        now_dir,
+        exp_dir,
+    )
+    print(cmd)
+    p = Popen(cmd, shell=True, cwd=now_dir)  # , stdin=PIPE, stdout=PIPE,stderr=PIPE
+    ###煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
+    done2 = [False]
+    threading.Thread(
+        target=if_done,
+        args=(
+            done2,
+            p,
+        ),
+    ).start()
         
     ####对不同part分别开多进程
     """
@@ -363,10 +359,9 @@ def click_train(
         names = set([name.split(".")[0] for name in os.listdir(gt_wavs_dir)]) & set(
             [name.split(".")[0] for name in os.listdir(feature_dir)]
         )
-    if use_d_vectors:
-        d_vector_dir = "%s/4_d_vectors" % (exp_dir)
-        names = set(names) & set([name.split(".")[0] for name in os.listdir(d_vector_dir)])
-
+    
+    d_vector_dir = "%s/4_d_vectors" % (exp_dir)
+    # names = set(names) & set([name.split(".")[0] for name in os.listdir(d_vector_dir)])
 
     opt = []
     spk_list = []
@@ -375,44 +370,26 @@ def click_train(
         if spk_id5 not in spk_list:
             spk_list.append(spk_id5)
         if if_f0_3:
-            if use_d_vectors:
-                opt.append(
-                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.npy|%s"
-                    % (
-                        gt_wavs_dir.replace("\\", "\\\\"),
-                        name,
-                        feature_dir.replace("\\", "\\\\"),
-                        name,
-                        f0_dir.replace("\\", "\\\\"),
-                        name,
-                        f0nsf_dir.replace("\\", "\\\\"),
-                        name,
-                        formants_dir.replace("\\", "\\\\"),
-                        name,
-                        d_vector_dir.replace("\\", "\\\\"),
-                        name,
-                        spk_id5,
-                    )
+            opt.append(
+                "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.npy|%s"
+                % (
+                    gt_wavs_dir.replace("\\", "\\\\"),
+                    name,
+                    feature_dir.replace("\\", "\\\\"),
+                    name,
+                    f0_dir.replace("\\", "\\\\"),
+                    name,
+                    f0nsf_dir.replace("\\", "\\\\"),
+                    name,
+                    formants_dir.replace("\\", "\\\\"),
+                    name,
+                    coarse_formants_dir.replace("\\", "\\\\"),
+                    name,
+                    d_vector_dir.replace("\\", "\\\\"),
+                    spk_id5,    #d-vectors have the format sid.npy
+                    spk_id5,
                 )
-            else:
-                opt.append(
-                    "%s/%s.wav|%s/%s.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s/%s.wav.npy|%s"
-                    % (
-                        gt_wavs_dir.replace("\\", "\\\\"),
-                        name,
-                        feature_dir.replace("\\", "\\\\"),
-                        name,
-                        f0_dir.replace("\\", "\\\\"),
-                        name,
-                        f0nsf_dir.replace("\\", "\\\\"),
-                        name,
-                        formants_dir.replace("\\", "\\\\"),
-                        name,
-                        coarse_formants_dir.replace("\\", "\\\\"),
-                        name,
-                        spk_id5,
-                    )
-                )
+            )
         else:
             opt.append(
                 "%s/%s.wav|%s/%s.npy|%s"
@@ -426,19 +403,11 @@ def click_train(
             )
     fea_dim = 256 if version19 == "v1" else 768
     if if_f0_3:
-        if use_d_vectors:
-            for _ in range(2):
-                opt.append(
-                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5_formants/mute.wav.npy|%s/logs/mute/4_d_vectors/mute.npy|%s"
-                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, now_dir, spk_id5)
-                )
-        else:
-            # for spk_id5 in spk_list:
-            for _ in range(2):
-                opt.append(
-                    "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5b_formants/mute.wav.npy|%s/logs/mute/5a_coarse_formants/mute.wav.npy|%s"
-                    % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, now_dir, spk_id5)
-                )
+        for _ in range(2):
+            opt.append(
+                "%s/logs/mute/0_gt_wavs/mute%s.wav|%s/logs/mute/3_feature%s/mute.npy|%s/logs/mute/2a_f0/mute.wav.npy|%s/logs/mute/2b-f0nsf/mute.wav.npy|%s/logs/mute/5b_formants/mute.wav.npy|%s/logs/mute/5a_coarse_formants/mute.wav.npy|%s/logs/mute/4_d_vectors/mute.npy|%s"
+                % (now_dir, sr2, now_dir, fea_dim, now_dir, now_dir, now_dir, now_dir, now_dir, spk_id5)
+            )
     else:
         for _ in range(2):
             opt.append(
@@ -504,7 +473,7 @@ def click_train(
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
 def main():
-    use_d_vectors = False
+    use_d_vectors = True
     use_se_loss = False
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/clean_singer" #Trainingset folder
     exp_dir1 = "NUSR8E-formant-experiment-small" #Experiment name

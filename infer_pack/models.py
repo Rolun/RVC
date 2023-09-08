@@ -507,10 +507,10 @@ class GeneratorNSF(torch.nn.Module):
         self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=False)
         self.ups.apply(init_weights)
 
-        self.emb_formant1 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
-        self.emb_formant2 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
-        self.emb_formant3 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
-        self.emb_formant4 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
+        # self.emb_formant1 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
+        # self.emb_formant2 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
+        # self.emb_formant3 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
+        # self.emb_formant4 = nn.Embedding(256, upsample_initial_channel) #nn.Linear(1, hidden_channels)
 
         if gin_channels != 0:
             self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
@@ -518,16 +518,16 @@ class GeneratorNSF(torch.nn.Module):
         self.upp = np.prod(upsample_rates)
         self.sr = sr
 
-    def forward(self, x, f0, cf1, cf2, cf3, cf4, g=None):
+    def forward(self, x, f0,  g=None): #cf1, cf2, cf3, cf4,
         har_source, noi_source, uv = self.m_source(f0, self.upp)
         # har_source_f1, _, _ = self.m_source(formants[0], self.upp)
         # har_source_f2, _, _ = self.m_source(formants[1], self.upp)
         # har_source_f3, _, _ = self.m_source(formants[2], self.upp)
 
-        cf1 = self.emb_formant1(cf1).transpose(1,2)
-        cf2 = self.emb_formant2(cf2).transpose(1,2)
-        cf3 = self.emb_formant3(cf3).transpose(1,2)
-        cf4 = self.emb_formant4(cf4).transpose(1,2)
+        # cf1 = self.emb_formant1(cf1).transpose(1,2)
+        # cf2 = self.emb_formant2(cf2).transpose(1,2)
+        # cf3 = self.emb_formant3(cf3).transpose(1,2)
+        # cf4 = self.emb_formant4(cf4).transpose(1,2)
 
         har_source = har_source.transpose(1, 2)
         # formant_source = (har_source_f1+har_source_f2+har_source_f3).transpose(1, 2)
@@ -535,7 +535,7 @@ class GeneratorNSF(torch.nn.Module):
         if g is not None:
             x = x + self.cond(g)
 
-        x = x + cf1 + cf2 + cf3 + cf4
+        # x = x + cf1 + cf2 + cf3 + cf4
 
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
@@ -794,8 +794,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         )
         if not self.use_d_vectors:
             self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
-        else:
-            self.emb_g = nn.Linear(gin_channels, gin_channels)
         print("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
 
         # self.emb_formant1 = nn.Embedding(256, gin_channels)
@@ -811,7 +809,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
             if sid.ndim == 0:
                 sid = sid.unsqueeze_(0)
         if "d_vectors" in aux_input and aux_input["d_vectors"] is not None:
-            g = aux_input["d_vectors"]
+            g = aux_input["d_vectors"].unsqueeze(-1)
             # g = aux_input["d_vectors"].unsqueeze(-1)
             # if g.ndim == 2:
             #     g = g.unsqueeze_(0)
@@ -845,11 +843,9 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
 
         sid, g, = self._set_cond_input(aux_input)
         #sid = sid.unsqueeze(-1).repeat(1, cf1.shape[-1])
-
         if not self.use_d_vectors:
             g = self.emb_g(sid).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
-        else:
-            g = self.emb_g(g).unsqueeze(-1)
+
         # g = g + self.emb_formant1(cf1) + self.emb_formant2(cf2) + self.emb_formant3(cf3)
 
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(cf1,cf2,cf3,cf4))
@@ -867,16 +863,16 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         cf4 = commons.slice_segments2(cf4, ids_slice, self.segment_size)
 
         # print(-2,pitchf.shape,z_slice.shape)
-        o = self.dec(z_slice, pitchf, cf1,cf2,cf3,cf4, g=g)
+        o = self.dec(z_slice, pitchf, g=g)
 
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    def infer(self, phone, phone_lengths, pitch, nsff0, sid, f1, f2, f3, f4, max_len=None):
+    def infer(self, phone, phone_lengths, pitch, nsff0, f1, f2, f3, f4, sid, max_len=None):
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(f1,f2,f3,f4))
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
-        o = self.dec((z * x_mask)[:, :, :max_len], nsff0, g=g)
+        o = self.dec((z * x_mask)[:, :, :max_len], nsff0,  g=g) #f1, f2, f3, f4,
         return o, x_mask, (z, z_p, m_p, logs_p)
     
     def infer_sembedding(self, sid):

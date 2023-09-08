@@ -1157,7 +1157,7 @@ class VC(object):
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, sid, f1, f2, f3, f4)[0][0, 0])
+                        (net_g.infer(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, sid)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()
