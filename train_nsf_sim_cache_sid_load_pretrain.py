@@ -231,6 +231,16 @@ def run(rank, n_gpus, hps):
                 tmpcond = nn.Conv1d(hps.model.gin_channels, hps.model.upsample_initial_channel, 1)
                 tmp['dec.cond.weight'] = tmpcond.weight.data
                 tmp['dec.cond.bias'] = tmpcond.bias.data
+
+                for i in range(4):
+                    cond_layer = torch.nn.Conv1d(
+                        hps.model.gin_channels, 2 * hps.model.hidden_channels * 3, 1
+                    )
+                    tmp_cond_layer = torch.nn.utils.weight_norm(cond_layer, name="weight")
+                    tmp[f"flow.flows.{i*2}.enc.cond_layer.weight_v"] = tmp_cond_layer.weight_v.data
+                    tmp[f"flow.flows.{i*2}.enc.cond_layer.weight_g"] = tmp_cond_layer.weight_g.data
+                    tmp[f"flow.flows.{i*2}.enc.cond_layer.bias"] = tmp_cond_layer.bias.data
+
                 # tmp["emb_g.weight"] = nn.Conv1d(256, 256, 1).weight.data
                 # tmp["emb_g.bias"] = nn.Conv1d(256, 256, 1).bias.data
                 # tmplin = nn.Linear(256, 256)
