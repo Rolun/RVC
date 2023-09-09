@@ -228,6 +228,9 @@ def run(rank, n_gpus, hps):
             tmp = torch.load(hps.pretrainG, map_location="cpu")["model"]
             if hps.use_d_vectors:
                 del tmp['emb_g.weight']
+                tmpcond = nn.Conv1d(hps.model.gin_channels, hps.model.upsample_initial_channel, 1)
+                tmp['dec.cond.weight'] = tmpcond.weight.data
+                tmp['dec.cond.bias'] = tmpcond.bias.data
                 # tmp["emb_g.weight"] = nn.Conv1d(256, 256, 1).weight.data
                 # tmp["emb_g.bias"] = nn.Conv1d(256, 256, 1).bias.data
                 # tmplin = nn.Linear(256, 256)

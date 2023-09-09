@@ -862,8 +862,8 @@ class VC(object):
             sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         if function=="infer_semb":
             semb = torch.tensor(semb, device=self.device).half()
-            if len(semb.shape)<3:
-                semb = F.normalize(semb.unsqueeze(0)).unsqueeze(-1)
+            # if len(semb.shape)<3:
+            #     semb = F.normalize(semb.unsqueeze(0)).unsqueeze(-1)
         if function=="infer_inter":
             inter = torch.tensor(inter, device=self.device).half()
         if function=="get_inter":
@@ -1164,7 +1164,7 @@ class VC(object):
                     )
                 elif function == "infer_semb":
                     audio1 = (
-                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, semb)[0][0, 0])
+                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, semb)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()
