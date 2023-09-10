@@ -183,7 +183,7 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-dv-reinitilize-dec_e70_s6580.pth" #merged3_e185_s8880.pth
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-dv-reinitilize-dec-flow-2_e10_s940.pth" #merged3_e185_s8880.pth
 input_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"
 f0method = "mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
@@ -235,12 +235,13 @@ def get_d_vector_resemblyzer(audio_file, save_path=""):
     from resemblyzer import VoiceEncoder, preprocess_wav
     from pathlib import Path
     import numpy as np
+    import torch
 
     fpath = Path(audio_file)
     wav = preprocess_wav(fpath)
 
     encoder = VoiceEncoder()
-    embed = encoder.embed_utterance(wav)
+    embed = encoder.embed_utterance(torch.Tensor(wav))
     np.set_printoptions(precision=3, suppress=True)
     if save_path:
         np.save(save_path, embed)
@@ -260,7 +261,7 @@ def generate(inp, function="infer_sid", f0up_key = 0, formant_shift=1, formant_t
     if function == "infer_sid":
         wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,sid=inp,function="infer_sid", formant_shift=formant_shift, formant_to_shift=formant_to_shift)
     if function == "infer_semb":
-        wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,semb=inp,function="infer_semb")
+        wav_opt=vc_single(input_path,f0up_key,None,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,semb=inp,function="infer_semb", formant_shift=formant_shift, formant_to_shift=formant_to_shift)
     if function == "infer_inter":
         wav_opt=vc_single(input_path,f0up_key,f0_file,f0method,index_path,index_rate,filter_radius,resample_sr,rms_mix_rate,protect,tgt_sr,net_g,vc,hubert_model,version,cpt,crepe_hop_length,inter=inp,function="infer_inter")
     if function == "infer_d_vector":
@@ -376,8 +377,11 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # generate(d_vector4, function="infer_semb", output_path="test_stuff/test_4.wav")
 # generate(d_vector5, function="infer_semb", output_path="test_stuff/test_5.wav")
 
-d_vector = np.load("C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/0.npy")
-generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path="test_stuff/formant_test_d_vector_reinitilize_dec_all-0.wav")
+
+# for i in range(12):
+# d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/0.npy")
+d_vector = get_d_vector_resemblyzer("C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac")
+generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_d_vector_reinitilize_dec_flow_2_e10_all-blacc.wav")
 
 
 # generate(0, function="infer_sid", f0up_key=-8, formant_shift=1, output_path="test_stuff/formant_test_encoder_all_f-8_1.wav")
