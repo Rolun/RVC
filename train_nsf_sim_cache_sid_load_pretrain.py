@@ -17,7 +17,14 @@ from resemblyzer import VoiceEncoder, preprocess_wav
 NUMBER_OF_SPEAKERS = 1#109
 
 #@torch.no_grad()
-def get_d_vector_resemblyzer(wav):
+def get_d_vector_resemblyzer(wav, encoder):
+    embeddings = []
+    for w in wav:
+        embed = encoder.embed_utterance(torch.squeeze(w.cpu()))
+        embeddings.append(np.expand_dims(embed,0))
+    return torch.tensor(embeddings)
+
+def load_speaker_encoder():
     torch_device = None
     if torch.cuda.is_available():
         torch_device = torch.device(f"cuda:{0 % torch.cuda.device_count()}")
@@ -27,14 +34,10 @@ def get_d_vector_resemblyzer(wav):
         torch_device = torch.device("cpu")
 
     encoder = VoiceEncoder(device=torch_device)
+    return encoder
 
-    embeddings = []
-    for w in wav:
-        embed = encoder.embed_utterance(torch.squeeze(w.cpu()))
-        embeddings.append(np.expand_dims(embed,0))
-    return torch.tensor(embeddings)
-
-speaker_encoder = get_d_vector_resemblyzer
+speaker_encoder = load_speaker_encoder()
+speaker_encoder_function = get_d_vector_resemblyzer
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -291,10 +294,10 @@ def run(rank, n_gpus, hps):
             # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
             #TODO: USE THESE FOR FORMANTS
-            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
@@ -558,7 +561,7 @@ def train_and_evaluate(
                     x_mask,
                     z_mask,
                     (z, z_p, m_p, logs_p, m_q, logs_q),
-                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": d_vector, "speaker_ids": sid})
+                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, aux_input={"d_vectors": d_vector, "speaker_ids": sid}) #cf1, cf2, cf3, cf4,
             else:
                 (
                     y_hat,
@@ -617,7 +620,7 @@ def train_and_evaluate(
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
                 if hps.use_se_loss:
-                    loss_se = se_loss(wave, y_hat, speaker_encoder)*spk_encoder_loss_alpha
+                    loss_se = se_loss(wave, y_hat, speaker_encoder_function, speaker_encoder)*spk_encoder_loss_alpha
                     loss_gen_all = loss_gen_all + loss_se
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
