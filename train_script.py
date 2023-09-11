@@ -473,8 +473,8 @@ def click_train(
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
 def main():
-    use_d_vectors = True
-    use_se_loss = True
+    use_d_vectors = False
+    use_se_loss = False
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
     exp_dir1 = "NUSR8E-formant-experiment-small" #Experiment name
     sr2 = "40k" #Target sample rate

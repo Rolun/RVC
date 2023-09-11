@@ -620,7 +620,7 @@ def train_and_evaluate(
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
                 if hps.use_se_loss:
-                    loss_se = se_loss(wave, y_hat, speaker_encoder_function, speaker_encoder)*spk_encoder_loss_alpha
+                    loss_se = se_loss(wave.detach(), y_hat.detach(), speaker_encoder_function, speaker_encoder)*spk_encoder_loss_alpha
                     loss_gen_all = loss_gen_all + loss_se
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()

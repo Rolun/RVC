@@ -183,7 +183,7 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-dv-only_e250_s23500.pth" #merged3_e185_s8880.pth
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-encoder_e250_s23500.pth" #merged3_e185_s8880.pth
 input_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"
 f0method = "mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
@@ -196,7 +196,7 @@ crepe_hop_length = 64
 f0_file = None#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_input_f0.txt"
 se_model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/model_se.pth"
 se_config_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/config_se.json" 
-use_d_vector = True
+use_d_vector = False
 
 
 def get_semb(sid, output_path = ""):
@@ -377,11 +377,13 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # generate(d_vector4, function="infer_semb", output_path="test_stuff/test_4.wav")
 # generate(d_vector5, function="infer_semb", output_path="test_stuff/test_5.wav")
 
+for i in range(12):
+    generate(i, function="infer_sid", f0up_key=0, formant_shift=1, output_path=f"test_stuff/formant_test_encoder_all_e250_sid-{i}.wav")
 
 # for i in range(12):
 # d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
-d_vector = get_d_vector_resemblyzer("C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav")
-generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_d_vector_only_all_e250-martin.wav")
+# d_vector = get_d_vector_resemblyzer("C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav")
+# generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_d_vector_only_all_e250-martin.wav")
 
 
 # generate(0, function="infer_sid", f0up_key=-8, formant_shift=1, output_path="test_stuff/formant_test_encoder_all_f-8_1.wav")
