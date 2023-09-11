@@ -8,7 +8,12 @@ inp_root = sys.argv[1]
 sr = int(sys.argv[2])
 n_p = int(sys.argv[3])
 exp_dir = sys.argv[4]
-noparallel = sys.argv[5] == "True"
+if len(sys.argv)==6:
+    pattern = ""
+    noparallel = sys.argv[5] == "True"
+elif len(sys.argv)==7:
+    pattern = sys.argv[5]
+    noparallel = sys.argv[6] == "True"
 
 import numpy as np, os, traceback
 from slicer2 import Slicer
@@ -101,23 +106,24 @@ class PreProcess:
         for path, idx0, spk_id in infos:
             self.pipeline(path, idx0, spk_id)
 
-    def create_infos(self, inp_root):
+    def create_infos(self, inp_root, pattern=""):
         infos = []
-        subfolders = os.listdir(inp_root)
+        subfolders = [name for name in os.listdir(inp_root) if os.path.isdir(os.path.join(inp_root,name))]
         speaker_mapping = {}
         for spk_id, folder in enumerate(subfolders):
             speaker_mapping[folder] = spk_id
             new_path = os.path.join(inp_root, folder)
             for idx, name in enumerate(sorted(list(os.listdir(new_path)))):
                 path_to_file = os.path.join(new_path, name)
-                infos.append([path_to_file,idx,spk_id])
+                if pattern in path_to_file:
+                    infos.append([path_to_file,idx,spk_id])
         with open(self.exp_dir + '/speaker_mapping.json', 'w') as f: 
             json.dump(speaker_mapping, f)
         return infos
 
-    def pipeline_mp_inp_dir(self, inp_root, n_p):
+    def pipeline_mp_inp_dir(self, inp_root, n_p, pattern=""):
         try:
-            infos = self.create_infos(inp_root)
+            infos = self.create_infos(inp_root, pattern)
             if noparallel:
                 for i in range(n_p):
                     self.pipeline_mp(infos[i::n_p])
@@ -135,13 +141,13 @@ class PreProcess:
             println("Fail. %s" % traceback.format_exc())
 
 
-def preprocess_trainset(inp_root, sr, n_p, exp_dir):
+def preprocess_trainset(inp_root, sr, n_p, exp_dir, pattern=""):
     pp = PreProcess(sr, exp_dir)
     println("start preprocess")
     println(sys.argv)
-    pp.pipeline_mp_inp_dir(inp_root, n_p)
+    pp.pipeline_mp_inp_dir(inp_root, n_p, pattern)
     println("end preprocess")
 
 
 if __name__ == "__main__":
-    preprocess_trainset(inp_root, sr, n_p, exp_dir)
+    preprocess_trainset(inp_root, sr, n_p, exp_dir, pattern)

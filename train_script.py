@@ -134,15 +134,15 @@ sr_dict = {
     "48k": 48000,
 }
 
-def preprocess_dataset(trainset_dir, exp_dir, sr, n_p):
+def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, pattern=""):
     sr = sr_dict[sr]
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
     f.close()
     cmd = (
         config.python_cmd
-        + " trainset_preprocess_pipeline_print_multi_folders.py %s %s %s %s/logs/%s "
-        % (trainset_dir, sr, n_p, now_dir, exp_dir)
+        + " trainset_preprocess_pipeline_print_multi_folders.py %s %s %s %s/logs/%s %s "
+        % (trainset_dir, sr, n_p, now_dir, exp_dir, pattern)
         + str(config.noparallel)
     )
     print(cmd)
@@ -474,8 +474,8 @@ def click_train(
 
 def main():
     use_d_vectors = True
-    use_se_loss = False
-    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/clean_singer" #Trainingset folder
+    use_se_loss = True
+    trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
     exp_dir1 = "NUSR8E-formant-experiment-small" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
@@ -493,12 +493,14 @@ def main():
     if_save_every_weights18 = True #Save a small final model to the 'weights' folder at each save point
     version19 = "v2" #v1 or v2
     extraction_crepe_hop_length = 64
+    pattern="mic1" #We don't want to capture directional data, so mic1 might be better
 
     # preprocess_dataset(
     #     trainset_dir4, 
     #     exp_dir1,
     #     sr2, 
-    #     np7
+    #     np7,
+    #     pattern
     # )
 
     # print("preprocess done")
