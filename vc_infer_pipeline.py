@@ -1164,7 +1164,7 @@ class VC(object):
                     )
                 elif function == "infer_semb":
                     audio1 = (
-                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, semb)[0][0, 0]) #cf1, cf2, cf3, cf4, 
+                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, semb)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()

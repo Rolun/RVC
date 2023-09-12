@@ -95,7 +95,7 @@ class TextEncoder768(nn.Module):
         )
         self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
-    def forward(self, phone, pitch, lengths, coarse_formants = (None,None,None)):
+    def forward(self, phone, pitch, lengths, coarse_formants = (None,None,None,None)):
         if pitch == None:
             x = self.emb_phone(phone)
         else:
@@ -795,10 +795,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
             self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
         print("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
 
-        # self.emb_formant1 = nn.Embedding(256, gin_channels)
-        # self.emb_formant2 = nn.Embedding(256, gin_channels)
-        # self.emb_formant3 = nn.Embedding(256, gin_channels)
-
     @staticmethod
     def _set_cond_input(aux_input: dict):
         """Set the speaker conditioning input based on the multi-speaker mode."""
@@ -827,7 +823,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         cf2[pitch==1]=1
         cf3[pitch==1]=1
         cf4[pitch==1]=1
-        # cf5[pitch==1]=1
 
         sid, g, = self._set_cond_input(aux_input)
         if not self.use_d_vectors:
@@ -876,9 +871,9 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         o = self.dec.forward_from_inter(inter, nsff0)
         return o, dummy_var
 
-    def infer_using_sembedding(self, phone, phone_lengths, pitch, nsff0, semb, max_len=None): #f1, f2, f3, f4, 
+    def infer_using_sembedding(self, phone, phone_lengths, pitch, nsff0, f1, f2, f3, f4, semb, max_len=None):
         g = semb.unsqueeze(0).unsqueeze(-1)
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths) #coarse_formants=(f1,f2,f3,f4)
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(f1,f2,f3,f4))
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
         o = self.dec((z * x_mask)[:, :, :max_len], nsff0, g=g)
