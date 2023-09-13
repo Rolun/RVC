@@ -14,7 +14,7 @@ import traceback, json, argparse, itertools, math, torch, pdb
 import numpy as np
 from resemblyzer import VoiceEncoder, preprocess_wav
 
-NUMBER_OF_SPEAKERS = 1#109
+NUMBER_OF_SPEAKERS = 12#109
 
 #@torch.no_grad()
 def get_d_vector_resemblyzer(wav, encoder):
@@ -294,10 +294,10 @@ def run(rank, n_gpus, hps):
             # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
             #TODO: USE THESE FOR FORMANTS
-            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 

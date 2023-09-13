@@ -473,10 +473,10 @@ def click_train(
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
 def main():
-    use_d_vectors = True
+    use_d_vectors = False
     use_se_loss = False
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
-    exp_dir1 = "NUSR8E-formant-experiment-small" #Experiment name
+    exp_dir1 = "NUSR8E-formant-experiment-all-512-formants" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder
@@ -495,23 +495,23 @@ def main():
     extraction_crepe_hop_length = 64
     pattern="mic1" #We don't want to capture directional data, so mic1 might be better
 
-    preprocess_dataset(
-        trainset_dir4, 
-        exp_dir1,
-        sr2, 
-        np7,
-        pattern
-    )
+    # preprocess_dataset(
+    #     trainset_dir4, 
+    #     exp_dir1,
+    #     sr2, 
+    #     np7,
+    #     pattern
+    # )
 
-    print("preprocess done")
+    # print("preprocess done")
 
-    extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
+    # extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
 
-    print("feature extraction done")
+    # print("feature extraction done")
 
-    train_index(exp_dir1, version19)
+    # train_index(exp_dir1, version19)
 
-    print("index trained")
+    # print("index trained")
 
     click_train(
         exp_dir1,

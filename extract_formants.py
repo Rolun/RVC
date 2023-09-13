@@ -28,7 +28,7 @@ class FeatureInput(object):
         self.fs = samplerate
         self.hop = hop_size
 
-        self.formant_bin = 256
+        self.formant_bin = 512
         self.formant_max = 5500.0
         self.formant_min = 50.0
         self.formant_mel_min = 1127 * np.log(1 + self.formant_min / 700)
@@ -93,7 +93,7 @@ class FeatureInput(object):
         formant_mel[formant_mel <= 1] = 1
         formant_mel[formant_mel > self.formant_bin - 1] = self.formant_bin - 1
         formant_coarse = np.rint(formant_mel).astype(int)
-        assert formant_coarse.max() <= 255 and formant_coarse.min() >= 1, (
+        assert formant_coarse.max() <= self.formant_bin-1 and formant_coarse.min() >= 1, (
             formant_coarse.max(),
             formant_coarse.min(),
         )

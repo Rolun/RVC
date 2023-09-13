@@ -183,8 +183,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all_se_only_e250_s23500.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/merged3_e185_s8880.pth" #merged3_e185_s8880.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"
 f0method = "mangio-crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
@@ -194,9 +194,9 @@ rms_mix_rate = 0.2
 protect = 0.33
 crepe_hop_length = 64
 f0_file = None#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_input_f0.txt"
-se_model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/model_se.pth"
-se_config_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/config_se.json" 
-use_d_vector = True
+#se_model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/model_se.pth"
+#se_config_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/config_se.json" 
+use_d_vector = False
 
 
 def get_semb(sid, output_path = ""):
@@ -304,6 +304,29 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
     with open(output_path, 'w') as f: 
         json.dump(mapping, f)
 
+def get_average_pitch(file):
+    from extract_f0_simple import FeatureInput
+
+    audio = load_audio(file,16000)
+    featureInput = FeatureInput()
+
+    f0 = featureInput.compute_f0_from_audio(audio=audio, f0_method="mangio-crepe", crepe_hop_length=128)
+
+    Q1 = np.percentile(f0, 25)
+    Q3 = np.percentile(f0, 75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    filtered_f0 = f0[(f0 >= lower_bound) & (f0 <= upper_bound)]
+    
+    mean_f0 = np.mean(filtered_f0)
+    median_f0 = np.median(filtered_f0)
+
+    return (mean_f0 + median_f0)/2
+
+def calculate_pitch_diff(f0_1, f0_2):
+    return int(12 * np.log2(f0_2 / f0_1))
+
 # get_inter(sid=0,f0up_key=0)
 # get_inter(sid=1,f0up_key=0)
 # get_inter(sid=2,f0up_key=6)
@@ -377,17 +400,36 @@ def create_f0_mapping(logs_path, output_path = "average_pitch_mapping.json"):
 # generate(d_vector4, function="infer_semb", output_path="test_stuff/test_4.wav")
 # generate(d_vector5, function="infer_semb", output_path="test_stuff/test_5.wav")
 
-# d_vector = get_d_vector_resemblyzer("C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav")
+# original_singer_file = "C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"
+# # original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac"
+# # original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"
+# f0_1 = get_average_pitch(original_singer_file)
+# f0_2 = get_average_pitch(input_path)
+# f_diff = calculate_pitch_diff(f0_1, f0_2)
+# print("f_diff: ", f_diff)
+# d_vector = get_d_vector_resemblyzer(original_singer_file)
+# generate(d_vector, function="infer_semb", f0up_key=f_diff, formant_shift=1, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_sid-martin_hq-autof0.wav")
 
 # for i in range(12):
 #     generate(i, function="infer_sid", f0up_key=0, formant_shift=1, output_path=f"test_stuff/formant_test_encoder_all_se_formants_e250_sid-{i}.wav")
 
-for i in range(12):
-    d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
-    generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_only_e250_sid-{i}.wav")
+# for i in range(12):
+#     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_only_e250_sid-{i}.wav")
 
+# for i in range(0,10):
+#     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-formants-dv-mic1/4_d_vectors/{i}.npy")
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_sid-{i}.wav")
 
-# generate(0, function="infer_sid", f0up_key=-8, formant_shift=1, output_path="test_stuff/formant_test_encoder_all_f-8_1.wav")
+# d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-formants-dv-mic1/4_d_vectors/0.npy")
+# for i in range(0,5):
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=0.7, formant_to_shift=i, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_f{i}-0.7-sid-0.wav")
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1.3, formant_to_shift=i, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_f{i}-1.3-sid-0.wav")
+
+# generate(d_vector, function="infer_semb", f0up_key=-8, formant_shift=0.8, formant_to_shift=0, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_f-8_0.8-sid-0.wav")
+# generate(d_vector, function="infer_semb", f0up_key=+8, formant_shift=1.2, formant_to_shift=0, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_f+8_1.2-sid-0.wav")
+
+generate(1, function="infer_sid", f0up_key=0, formant_shift=1, output_path="test_stuff/long_test.wav")
 
 # for i in range(1,5):
 #     generate(1, function="infer_sid", f0up_key=0, formant_shift=0.7, formant_to_shift=i, output_path=f"test_stuff/formant_test_encoder_generator_f{i}-0.7-sid1.wav")

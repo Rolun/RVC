@@ -44,7 +44,7 @@ for id_, wavs in speaker_wavs.items():
     if os.path.exists(out_path):
         continue
     
-    d_vector = np.asarray([encoder.embed_utterance(torch.Tensor(wav)) for wav in wavs]).mean(axis=0)
+    d_vector = np.asarray([encoder.embed_utterance(wav) for wav in wavs]).mean(axis=0)
     if np.isnan(d_vector).sum() == 0:
         np.save(out_path, d_vector, allow_pickle=False)
 

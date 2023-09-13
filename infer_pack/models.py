@@ -85,10 +85,10 @@ class TextEncoder768(nn.Module):
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         if f0 == True:
             self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
-            self.emb_formant1 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
-            self.emb_formant2 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
-            self.emb_formant3 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
-            self.emb_formant4 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
+            self.emb_formant1 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
+            self.emb_formant2 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
+            self.emb_formant3 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
+            self.emb_formant4 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
             # self.emb_formant5 = nn.Embedding(256, hidden_channels)
         self.encoder = attentions.Encoder(
             hidden_channels, filter_channels, n_heads, n_layers, kernel_size, p_dropout
