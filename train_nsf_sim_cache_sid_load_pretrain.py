@@ -294,10 +294,10 @@ def run(rank, n_gpus, hps):
             # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
             #TODO: USE THESE FOR FORMANTS
-            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 

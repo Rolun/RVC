@@ -476,7 +476,7 @@ def main():
     use_d_vectors = False
     use_se_loss = False
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
-    exp_dir1 = "NUSR8E-formant-experiment-all-512-formants" #Experiment name
+    exp_dir1 = "NUSR8E-formant-experiment-all-2048-formants" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder

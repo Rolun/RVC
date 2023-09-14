@@ -183,9 +183,9 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/merged3_e185_s8880.pth" #merged3_e185_s8880.pth
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all-512-formants_e250_s23500.pth" #merged3_e185_s8880.pth
 input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"
-f0method = "mangio-crepe"
+f0method = "crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
 filter_radius = 3
@@ -429,7 +429,7 @@ def calculate_pitch_diff(f0_1, f0_2):
 # generate(d_vector, function="infer_semb", f0up_key=-8, formant_shift=0.8, formant_to_shift=0, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_f-8_0.8-sid-0.wav")
 # generate(d_vector, function="infer_semb", f0up_key=+8, formant_shift=1.2, formant_to_shift=0, output_path=f"test_stuff/VCTK/formants_dv_mic1_e50e250_f+8_1.2-sid-0.wav")
 
-generate(1, function="infer_sid", f0up_key=0, formant_shift=1, output_path="test_stuff/long_test.wav")
+generate(1, function="infer_sid", f0up_key=0, formant_shift=1, output_path="test_stuff/long_test_crepe160_512_e250.wav")
 
 # for i in range(1,5):
 #     generate(1, function="infer_sid", f0up_key=0, formant_shift=0.7, formant_to_shift=i, output_path=f"test_stuff/formant_test_encoder_generator_f{i}-0.7-sid1.wav")

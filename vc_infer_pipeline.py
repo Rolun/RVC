@@ -244,7 +244,7 @@ class VC(object):
         return f0_median_hybrid
 
     def coarse_formant(self, fN):
-        formant_bin = 256
+        formant_bin = 512
         formant_max = 5500.0
         formant_min = 50.0
         formant_mel_min = 1127 * np.log(1 + formant_min / 700)
@@ -261,7 +261,7 @@ class VC(object):
         formant_mel[formant_mel <= 1] = 1
         formant_mel[formant_mel > formant_bin - 1] = formant_bin - 1
         formant_coarse = np.rint(formant_mel).astype(int)
-        assert formant_coarse.max() <= 255 and formant_coarse.min() >= 1, (
+        assert formant_coarse.max() <= formant_bin-1 and formant_coarse.min() >= 1, (
             formant_coarse.max(),
             formant_coarse.min(),
         )
@@ -1157,7 +1157,7 @@ class VC(object):
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0]) #cf1, cf2, cf3, cf4,
+                        (net_g.infer(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, sid)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()
