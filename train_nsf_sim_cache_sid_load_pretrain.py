@@ -16,7 +16,6 @@ from resemblyzer import VoiceEncoder, preprocess_wav
 
 NUMBER_OF_SPEAKERS = 12#109
 
-#@torch.no_grad()
 def get_d_vector_resemblyzer(wav, encoder):
     embeddings = []
     for w in wav:
@@ -36,8 +35,8 @@ def load_speaker_encoder():
     encoder = VoiceEncoder(device=torch_device)
     return encoder
 
-speaker_encoder = load_speaker_encoder()
-speaker_encoder_function = get_d_vector_resemblyzer
+# speaker_encoder = load_speaker_encoder()
+# speaker_encoder_function = get_d_vector_resemblyzer
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -164,6 +163,7 @@ def run(rank, n_gpus, hps):
     )
 
     hps.model.spk_embed_dim = NUMBER_OF_SPEAKERS
+    hps.se_backprop = True
     if hps.if_f0 == 1:
         net_g = RVC_Model_f0(
             hps.data.filter_length // 2 + 1,
@@ -186,6 +186,8 @@ def run(rank, n_gpus, hps):
     net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm)
     if torch.cuda.is_available():
         net_d = net_d.cuda(rank)
+    if hps.use_se_loss:
+        speaker_encoder = load_speaker_encoder()
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
         hps.train.learning_rate,
@@ -198,14 +200,24 @@ def run(rank, n_gpus, hps):
         betas=hps.train.betas,
         eps=hps.train.eps,
     )
+    optim_se = torch.optim.AdamW(
+        speaker_encoder.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps,
+    )
     # net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
     # net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
     if torch.cuda.is_available():
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
+        if hps.se_backprop:
+            speaker_encoder = DDP(speaker_encoder, device_ids=[rank])
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
+        if hps.se_backprop:
+            speaker_encoder = DDP(speaker_encoder)
 
     try:  # 如果能加载自动resume
         _, _, _, epoch_str = utils.load_checkpoint(
@@ -341,8 +353,8 @@ def run(rank, n_gpus, hps):
                 rank,
                 epoch,
                 hps,
-                [net_g, net_d],
-                [optim_g, optim_d],
+                [net_g, net_d, speaker_encoder] if hps.use_se_loss else [net_g, net_d],
+                [optim_g, optim_d, optim_se] if hps.se_backprop else [optim_g, optim_d],
                 [scheduler_g, scheduler_d],
                 scaler,
                 [train_loader, None],
@@ -355,8 +367,8 @@ def run(rank, n_gpus, hps):
                 rank,
                 epoch,
                 hps,
-                [net_g, net_d],
-                [optim_g, optim_d],
+                [net_g, net_d, speaker_encoder] if hps.use_se_loss else [net_g, net_d],
+                [optim_g, optim_d, optim_se] if hps.se_backprop else [optim_g, optim_d],
                 [scheduler_g, scheduler_d],
                 scaler,
                 [train_loader, None],
@@ -371,8 +383,14 @@ def run(rank, n_gpus, hps):
 def train_and_evaluate(
     rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers, cache
 ):
-    net_g, net_d = nets
-    optim_g, optim_d = optims
+    if hps.use_se_loss or hps.se_backprop:
+        net_g, net_d, speaker_encoder = nets
+    else:
+        net_g, net_d = nets
+    if hps.se_backprop:
+        optim_g, optim_d, optim_se = optims
+    else:
+        optim_g, optim_d = optims
     train_loader, eval_loader = loaders
     if writers is not None:
         writer, writer_eval = writers
@@ -382,6 +400,8 @@ def train_and_evaluate(
 
     net_g.train()
     net_d.train()
+    if hps.se_backprop:
+        speaker_encoder.train()
 
     # Prepare data iterator
     if hps.if_cache_data_in_gpu == True:
@@ -554,22 +574,6 @@ def train_and_evaluate(
 
         # Calculate
         with autocast(enabled=hps.train.fp16_run):
-            if hps.if_f0 == 1:
-                (
-                    y_hat,
-                    ids_slice,
-                    x_mask,
-                    z_mask,
-                    (z, z_p, m_p, logs_p, m_q, logs_q),
-                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": d_vector, "speaker_ids": sid})
-            else:
-                (
-                    y_hat,
-                    ids_slice,
-                    x_mask,
-                    z_mask,
-                    (z, z_p, m_p, logs_p, m_q, logs_q),
-                ) = net_g(phone, phone_lengths, spec, spec_lengths, sid)
             mel = spec_to_mel_torch(
                 spec,
                 hps.data.filter_length,
@@ -578,6 +582,31 @@ def train_and_evaluate(
                 hps.data.mel_fmin,
                 hps.data.mel_fmax,
             )
+            if hps.se_backprop:
+                sliced_mels = []
+                for i in range(mel.size(2)//40+1):
+                    sliced_mel = mel[:,:,i*40:(i+1)*40]
+                    if sliced_mel.size(2)<40:
+                        padding_y = max(0, 40 - sliced_mel.size(2))
+                        sliced_mel = F.pad(sliced_mel, (0, padding_y), value=0)
+                    sliced_mels.append(sliced_mel)
+                generated_d_vector = torch.mean(torch.stack([speaker_encoder(sliced_mel) for sliced_mel in sliced_mels]), axis=0)
+            if hps.if_f0 == 1:
+                (
+                    y_hat,
+                    ids_slice,
+                    x_mask,
+                    z_mask,
+                    (z, z_p, m_p, logs_p, m_q, logs_q),
+                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": generated_d_vector if hps.se_backprop else d_vector, "speaker_ids": sid})
+            else:
+                (
+                    y_hat,
+                    ids_slice,
+                    x_mask,
+                    z_mask,
+                    (z, z_p, m_p, logs_p, m_q, logs_q),
+                ) = net_g(phone, phone_lengths, spec, spec_lengths, sid)
             y_mel = commons.slice_segments(
                 mel, ids_slice, hps.train.segment_size // hps.data.hop_length
             )
@@ -592,10 +621,14 @@ def train_and_evaluate(
                     hps.data.mel_fmin,
                     hps.data.mel_fmax,
                 )
-            if hps.use_se_loss: #Put this before casting to half
-                with torch.no_grad():
+            if hps.use_se_loss:
+                if hps.se_backprop:
                     speaker_embedding = speaker_encoder(y_mel)
                     speaker_embedding_hat = speaker_encoder(y_hat_mel)
+                else:
+                    with torch.no_grad():
+                        speaker_embedding = speaker_encoder(y_mel)
+                        speaker_embedding_hat = speaker_encoder(y_hat_mel)
             if hps.train.fp16_run == True:
                 y_hat_mel = y_hat_mel.half()
             wave = commons.slice_segments(
@@ -627,9 +660,15 @@ def train_and_evaluate(
                     loss_se = se_loss(speaker_embedding, speaker_embedding_hat)*spk_encoder_loss_alpha
                     loss_gen_all = loss_gen_all + loss_se
         optim_g.zero_grad()
+        if hps.se_backprop:
+            optim_se.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
+        if hps.se_backprop:
+            scaler.unscale_(optim_se)
         grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
+        if hps.se_backprop:
+            grad_norm_se = commons.clip_grad_value_(speaker_encoder.parameters(), None)
         scaler.step(optim_g)
         scaler.update()
 
@@ -649,7 +688,7 @@ def train_and_evaluate(
 
                 logger.info([global_step, lr])
                 logger.info(
-                    f"loss_disc={loss_disc:.3f}, loss_gen={loss_gen:.3f}, loss_fm={loss_fm:.3f},loss_mel={loss_mel:.3f}, loss_kl={loss_kl:.3f}"
+                    f"loss_disc={loss_disc:.3f}, loss_gen={loss_gen:.3f}, loss_fm={loss_fm:.3f},loss_mel={loss_mel:.3f}, loss_kl={loss_kl:.3f}" + f", loss_se={loss_se:.3f}" if hps.use_se_loss else ""
                 )
                 scalar_dict = {
                     "loss/g/total": loss_gen_all,
@@ -665,6 +704,12 @@ def train_and_evaluate(
                         "loss/g/kl": loss_kl,
                     }
                 )
+                if hps.use_se_loss:
+                    scalar_dict.update(
+                        {
+                            "loss/se": loss_se
+                        }
+                    )
 
                 scalar_dict.update(
                     {"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)}
@@ -711,6 +756,14 @@ def train_and_evaluate(
                 epoch,
                 os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
             )
+            if hps.se_backprop:
+                utils.save_checkpoint(
+                    speaker_encoder,
+                    optim_se,
+                    hps.train.learning_rate,
+                    epoch,
+                    os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
+                )
         else:
             utils.save_checkpoint(
                 net_g,
@@ -726,6 +779,14 @@ def train_and_evaluate(
                 epoch,
                 os.path.join(hps.model_dir, "D_{}.pth".format(2333333)),
             )
+            if hps.se_backprop:
+                utils.save_checkpoint(
+                    speaker_encoder,
+                    optim_se,
+                    hps.train.learning_rate,
+                    epoch,
+                    os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
+                )
         if rank == 0 and hps.save_every_weights == "1":
             if hasattr(net_g, "module"):
                 ckpt = net_g.module.state_dict()

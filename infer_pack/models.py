@@ -12,6 +12,7 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from infer_pack.commons import init_weights
 import numpy as np
 from infer_pack import commons
+from torch.nn.utils import clip_grad_norm_
 
 
 class TextEncoder256(nn.Module):
@@ -707,6 +708,60 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
+class SpeakerEncoder(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        ## Model parameters
+        model_hidden_size = 256
+        model_embedding_size = 256
+        model_num_layers = 3
+        mel_n_channels = 40
+        
+        # Network defition
+        self.lstm = nn.LSTM(input_size=mel_n_channels,
+                            hidden_size=model_hidden_size, 
+                            num_layers=model_num_layers, 
+                            batch_first=True)
+        self.linear = nn.Linear(in_features=model_hidden_size, 
+                                out_features=model_embedding_size)
+        self.relu = torch.nn.ReLU()
+        
+        # Cosine similarity scaling (with fixed initial parameter values)
+        self.similarity_weight = nn.Parameter(torch.tensor([10.]))
+        self.similarity_bias = nn.Parameter(torch.tensor([-5.]))
+        
+    def do_gradient_ops(self):
+        # Gradient scale
+        self.similarity_weight.grad *= 0.01
+        self.similarity_bias.grad *= 0.01
+            
+        # Gradient clipping
+        clip_grad_norm_(self.parameters(), 3, norm_type=2)
+    
+    def forward(self, utterances, hidden_init=None):
+        """
+        Computes the embeddings of a batch of utterance spectrograms.
+        
+        :param utterances: batch of mel-scale filterbanks of same duration as a tensor of shape 
+        (batch_size, n_frames, n_channels) 
+        :param hidden_init: initial hidden state of the LSTM as a tensor of shape (num_layers, 
+        batch_size, hidden_size). Will default to a tensor of zeros if None.
+        :return: the embeddings as a tensor of shape (batch_size, embedding_size)
+        """
+        # Pass the input through the LSTM layers and retrieve all outputs, the final hidden state
+        # and the final cell state.
+        out, (hidden, cell) = self.lstm(utterances, hidden_init)
+        
+        # We take only the hidden state of the last layer
+        embeds_raw = self.relu(self.linear(hidden[-1]))
+        
+        # L2-normalize it
+        embeds = embeds_raw / (torch.norm(embeds_raw, dim=1, keepdim=True) + 1e-5)        
+
+        return embeds
+
+
 class SynthesizerTrnMs768NSFsid(nn.Module):
     def __init__(
         self,
@@ -729,8 +784,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         gin_channels,
         sr,
         use_d_vectors = False,
-        use_speaker_encoder_as_loss = False,
-        speaker_encoder = None,
         **kwargs
     ):
         super().__init__()
@@ -753,8 +806,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.segment_size = segment_size
         self.gin_channels = gin_channels
         self.use_d_vectors = use_d_vectors
-        self.use_speaker_encoder_as_loss = use_speaker_encoder_as_loss
-        self.speaker_encoder = speaker_encoder
         # self.hop_length = hop_length#
         self.spk_embed_dim = spk_embed_dim
         self.enc_p = TextEncoder768(
