@@ -473,10 +473,10 @@ def click_train(
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
 def main():
-    use_d_vectors = False
-    use_se_loss = False
+    use_d_vectors = True
+    use_se_loss = True
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
-    exp_dir1 = "NUSR8E-formant-experiment-all-2048-formants" #Experiment name
+    exp_dir1 = "NUSR8E-formant-experiment-all" #Experiment name
     sr2 = "40k" #Target sample rate
     if_f0_3 = True #Pitch guidance, required for singing
     # trainset_dir4 = "Training" #Training data folder
@@ -485,7 +485,7 @@ def main():
     save_epoch10 = 5 #Save frequency
     total_epoch11 = 1#250 #Total epochs
     batch_size12 = 16 #Batch size
-    if_save_latest13 = True #Save only the latest .ckpt file
+    if_save_latest13 = False #Save only the latest .ckpt file
     pretrained_G14 = "pretrained_v2/f0G40k.pth"
     pretrained_D15 = "pretrained_v2/f0D40k.pth"
     gpus6 = gpus16 = "0" #Enter the GPU index(es) separated by '-', e.g., 0-1-2 to use GPU 0, 1, and 2

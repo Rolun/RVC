@@ -244,7 +244,7 @@ class VC(object):
         return f0_median_hybrid
 
     def coarse_formant(self, fN):
-        formant_bin = 512
+        formant_bin = 256
         formant_max = 5500.0
         formant_min = 50.0
         formant_mel_min = 1127 * np.log(1 + formant_min / 700)
@@ -967,8 +967,8 @@ class VC(object):
                         version,
                         protect,
                         function,
-                        (f1,f2,f3,f4,f5),
-                        (cf1,cf2,cf3,cf4,cf5)
+                        (f1[:, s // self.window : (t + self.t_pad2) // self.window],f2[:, s // self.window : (t + self.t_pad2) // self.window],f3[:, s // self.window : (t + self.t_pad2) // self.window],f4[:, s // self.window : (t + self.t_pad2) // self.window],f5[:, s // self.window : (t + self.t_pad2) // self.window]),
+                        (cf1[:, s // self.window : (t + self.t_pad2) // self.window],cf2[:, s // self.window : (t + self.t_pad2) // self.window],cf3[:, s // self.window : (t + self.t_pad2) // self.window],cf4[:, s // self.window : (t + self.t_pad2) // self.window],cf5[:, s // self.window : (t + self.t_pad2) // self.window])
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             else:
@@ -1010,8 +1010,8 @@ class VC(object):
                     version,
                     protect,
                     function,
-                    (f1,f2,f3,f4,f5),
-                    (cf1,cf2,cf3,cf4,cf5)
+                    (f1[:, t // self.window :] if t is not None else f1,f2[:, t // self.window :] if t is not None else f2,f3[:, t // self.window :] if t is not None else f3,f4[:, t // self.window :] if t is not None else f4,f5[:, t // self.window :] if t is not None else f5),
+                    (cf1[:, t // self.window :] if t is not None else cf1,cf2[:, t // self.window :] if t is not None else cf2,cf3[:, t // self.window :] if t is not None else cf3,cf4[:, t // self.window :] if t is not None else cf4,cf5[:, t // self.window :] if t is not None else cf5)
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         else:

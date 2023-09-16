@@ -3,12 +3,14 @@ from extract_f0_print import FeatureInput as PitchFeatureInput
 import numpy as np
 import matplotlib.pyplot as plt
 
-sources = [
-    "C:/Users/lundb/Documents/Other/Music/i.wav", # GT
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-0.7.wav", 
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-1.wav",
-    "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-1.5.wav",
-    ]
+sources = ["C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/Short_silent_test_from_need_dollar.wav"]
+
+# sources = [
+#     "C:/Users/lundb/Documents/Other/Music/i.wav", # GT
+#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-0.7.wav", 
+#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-1.wav",
+#     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_encoder_generator_i-1.5.wav",
+#     ]
 
 # sources = [
 #     "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav", # GT

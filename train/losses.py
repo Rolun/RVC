@@ -12,13 +12,8 @@ def feature_loss(fmap_r, fmap_g):
 
     return loss * 2
 
-def se_loss(wav_seg, o, speaker_encoder_function, speaker_encoder):
-    # wavs_batch = torch.cat((wav_seg, o), dim=0)
-    # pred_embs = speaker_encoder(wavs_batch)
-    # gt_spk_emb, syn_spk_emb = torch.chunk(pred_embs, 2, dim=0)
-    gt_spk_emb = speaker_encoder_function(wav_seg, speaker_encoder)
-    syn_spk_emb = speaker_encoder_function(o, speaker_encoder)
-    return -torch.nn.functional.cosine_similarity(gt_spk_emb, syn_spk_emb).mean()
+def se_loss(se, se_hat):
+    return -torch.nn.functional.cosine_similarity(se, se_hat).mean()
 
 def discriminator_loss(disc_real_outputs, disc_generated_outputs):
     loss = 0

@@ -294,10 +294,10 @@ def run(rank, n_gpus, hps):
             # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
             #TODO: USE THESE FOR FORMANTS
-            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(2048, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
@@ -592,6 +592,10 @@ def train_and_evaluate(
                     hps.data.mel_fmin,
                     hps.data.mel_fmax,
                 )
+            if hps.use_se_loss: #Put this before casting to half
+                with torch.no_grad():
+                    speaker_embedding = speaker_encoder(y_mel)
+                    speaker_embedding_hat = speaker_encoder(y_hat_mel)
             if hps.train.fp16_run == True:
                 y_hat_mel = y_hat_mel.half()
             wave = commons.slice_segments(
@@ -620,7 +624,7 @@ def train_and_evaluate(
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
                 if hps.use_se_loss:
-                    loss_se = se_loss(wave.detach(), y_hat.detach(), speaker_encoder_function, speaker_encoder)*spk_encoder_loss_alpha
+                    loss_se = se_loss(speaker_embedding, speaker_embedding_hat)*spk_encoder_loss_alpha
                     loss_gen_all = loss_gen_all + loss_se
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
