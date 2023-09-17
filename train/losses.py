@@ -12,8 +12,11 @@ def feature_loss(fmap_r, fmap_g):
 
     return loss * 2
 
-def se_loss(se, se_hat):
+def se_loss_coqui(se, se_hat):
     return -torch.nn.functional.cosine_similarity(se, se_hat).mean()
+
+def se_loss_resemblyzer(se, se_hat):
+    pass
 
 def discriminator_loss(disc_real_outputs, disc_generated_outputs):
     loss = 0

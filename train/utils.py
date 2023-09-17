@@ -353,6 +353,13 @@ def get_hparams(init=True):
         help="use se_loss as an additional loss to the model, 1 or 0",
     )
     parser.add_argument(
+        "-seb",
+        "--se_backprop",
+        type=int,
+        default=0,
+        help="backprop through the speaker encoder, 1 or 0",
+    )
+    parser.add_argument(
         "-l",
         "--if_latest",
         type=int,
@@ -400,6 +407,7 @@ def get_hparams(init=True):
     hparams.if_f0 = args.if_f0
     hparams.use_d_vectors = args.use_d_vectors
     hparams.use_se_loss = args.use_se_loss
+    hparams.se_backprop = args.se_backprop
     hparams.if_latest = args.if_latest
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu

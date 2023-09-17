@@ -197,6 +197,7 @@ f0_file = None#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/t
 #se_model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/model_se.pth"
 #se_config_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/config_se.json" 
 use_d_vector = True
+trained_se_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all-se-backprop/SE_23500.pth"
 
 
 def get_semb(sid, output_path = ""):
@@ -231,17 +232,16 @@ def get_d_vector_yourtts(audio_file, model_path, config_path, old_speakers_file 
     d_vector = encoder_manager.compute_embedding_from_clip(audio_file)
     return d_vector
 
-def get_d_vector_resemblyzer(audio_file, save_path=""):
+def get_d_vector_resemblyzer(audio_file, save_path="", trained_se_path=""):
     from resemblyzer import VoiceEncoder, preprocess_wav
     from pathlib import Path
     import numpy as np
-    import torch
 
     fpath = Path(audio_file)
     wav = preprocess_wav(fpath)
 
-    encoder = VoiceEncoder()
-    embed = encoder.embed_utterance(torch.Tensor(wav))
+    encoder = VoiceEncoder(weights_fpath=trained_se_path)
+    embed = encoder.embed_utterance(wav)
     np.set_printoptions(precision=3, suppress=True)
     if save_path:
         np.save(save_path, embed)
@@ -415,9 +415,13 @@ def calculate_pitch_diff(f0_1, f0_2):
 # for i in range(12):
 #     generate(i, function="infer_sid", f0up_key=0, formant_shift=1, output_path=f"test_stuff/formant_test_encoder_all_se_formants_e250_sid-{i}.wav")
 
-for i in range(12):
-    d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
-    generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_forward_function_e250_sid-{i}.wav")
+# for i in range(12):
+#     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_forward_function_e250_sid-{i}.wav")
+
+
+d_vector = get_d_vector_resemblyzer(f"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/ADIZ/01.wav", trained_se_path=trained_se_path)
+generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_backprop_e250_sid-ADIZ.wav")
 
 # for i in range(0,10):
 #     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-formants-dv-mic1/4_d_vectors/{i}.npy")

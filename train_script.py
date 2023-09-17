@@ -323,6 +323,7 @@ def click_train(
     if_f0_3,
     use_d_vectors,
     use_se_loss,
+    se_backprop,
     save_epoch10,
     total_epoch11,
     batch_size12,
@@ -429,7 +430,7 @@ def click_train(
     if gpus16:
         cmd = (
             config.python_cmd
-            + " train_nsf_sim_cache_sid_load_pretrain.py -e %s -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s -dv %s -sel %s"
+            + " train_nsf_sim_cache_sid_load_pretrain.py -e %s -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s -dv %s -sel %s -seb %s"
             % (
                 exp_dir1,
                 sr2,
@@ -446,6 +447,7 @@ def click_train(
                 version19,
                 1 if use_d_vectors else 0,
                 1 if use_se_loss else 0,
+                1 if se_backprop else 0,
             )
         )
     else:
@@ -475,6 +477,7 @@ def click_train(
 def main():
     use_d_vectors = True
     use_se_loss = True
+    se_backprop = True
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
     exp_dir1 = "NUSR8E-formant-experiment-all" #Experiment name
     sr2 = "40k" #Target sample rate
@@ -519,6 +522,7 @@ def main():
         if_f0_3,
         use_d_vectors,
         use_se_loss,
+        se_backprop,
         save_epoch10,
         total_epoch11,
         batch_size12,
