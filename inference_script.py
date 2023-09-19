@@ -183,8 +183,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all_se_forward_function_e250_s23500.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav""C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all_se_forward_function_e250_s23500.pth" #merged3_e185_s8880.pth #NUSR8E-formant-experiment-all-backprop-fixed-dv_e250_s23500.pth #NUSR8E-formant-experiment-all-dv-reinitilize-dec-flow-2_e250_s23500.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/NJAT/07.wav"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#
 f0method = "crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
@@ -197,7 +197,7 @@ f0_file = None#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/t
 #se_model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/model_se.pth"
 #se_config_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/speaker_embeddings/config_se.json" 
 use_d_vector = True
-trained_se_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all-se-backprop/SE_23500.pth"
+trained_se_path = None#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all-backprop-fixed-dv/SE_23500.pth"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all-se-backprop/SE_23500.pth"#
 
 
 def get_semb(sid, output_path = ""):
@@ -417,11 +417,11 @@ def calculate_pitch_diff(f0_1, f0_2):
 
 # for i in range(12):
 #     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
-#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_forward_function_e250_sid-{i}.wav")
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_backprop_fixed_dv_e250_sid-{i}.wav")
 
 
-d_vector = get_d_vector_resemblyzer(f"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/ADIZ/01.wav", trained_se_path=trained_se_path)
-generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_backprop_e250_sid-ADIZ.wav")
+d_vector = get_d_vector_resemblyzer(f"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac", trained_se_path=trained_se_path)
+generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_forward_function_e250-blacc-sos.wav")
 
 # for i in range(0,10):
 #     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-formants-dv-mic1/4_d_vectors/{i}.npy")

@@ -86,10 +86,10 @@ class TextEncoder768(nn.Module):
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         if f0 == True:
             self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
-            self.emb_formant1 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
-            self.emb_formant2 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
-            self.emb_formant3 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
-            self.emb_formant4 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
+            # self.emb_formant1 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
+            # self.emb_formant2 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
+            # self.emb_formant3 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
+            # self.emb_formant4 = nn.Embedding(256, hidden_channels) #nn.Linear(1, hidden_channels)
         self.encoder = attentions.Encoder(
             hidden_channels, filter_channels, n_heads, n_layers, kernel_size, p_dropout
         )
@@ -867,18 +867,18 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.enc_q.remove_weight_norm()
 
     def forward(
-        self, phone, phone_lengths, pitch, pitchf, y, y_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": None, "speaker_ids": None},
+        self, phone, phone_lengths, pitch, pitchf, y, y_lengths, aux_input={"d_vectors": None, "speaker_ids": None}, #cf1, cf2, cf3, cf4,
     ):
-        cf1[pitch==1]=1
-        cf2[pitch==1]=1
-        cf3[pitch==1]=1
-        cf4[pitch==1]=1
+        # cf1[pitch==1]=1
+        # cf2[pitch==1]=1
+        # cf3[pitch==1]=1
+        # cf4[pitch==1]=1
 
         sid, g, = self._set_cond_input(aux_input)
         if not self.use_d_vectors:
             g = self.emb_g(sid).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
 
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(cf1,cf2,cf3,cf4))
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths) #coarse_formants=(cf1,cf2,cf3,cf4)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
         z_slice, ids_slice = commons.rand_slice_segments(

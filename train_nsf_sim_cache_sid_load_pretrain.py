@@ -305,10 +305,10 @@ def run(rank, n_gpus, hps):
             # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
             #TODO: USE THESE FOR FORMANTS
-            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            # tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
@@ -597,7 +597,7 @@ def train_and_evaluate(
                     x_mask,
                     z_mask,
                     (z, z_p, m_p, logs_p, m_q, logs_q),
-                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": d_vector if hps.se_backprop else d_vector, "speaker_ids": sid})
+                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, aux_input={"d_vectors": d_vector if hps.se_backprop else d_vector, "speaker_ids": sid}) #cf1, cf2, cf3, cf4,
             else:
                 (
                     y_hat,
@@ -656,7 +656,7 @@ def train_and_evaluate(
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
                 if hps.use_se_loss:
-                    loss_se = se_loss_coqui(d_vector, speaker_embedding_hat)*spk_encoder_loss_alpha
+                    loss_se = se_loss_coqui(speaker_embedding, speaker_embedding_hat)*spk_encoder_loss_alpha    #speaker_embedding and speaker_embedding_hat is according to coqui model. Can try using d-vectors instead of speaker_embeddings
                     loss_gen_all = loss_gen_all + loss_se
         optim_g.zero_grad()
         if hps.se_backprop:
