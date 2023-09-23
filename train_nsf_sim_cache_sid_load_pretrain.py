@@ -709,6 +709,12 @@ def train_and_evaluate(
                             "loss/se": loss_se
                         }
                     )
+                if hps.se_backprop:
+                    scalar_dict.update(
+                        {
+                            "grad_norm_se": grad_norm_se
+                        }
+                    )
 
                 scalar_dict.update(
                     {"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)}

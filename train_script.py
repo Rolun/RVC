@@ -322,6 +322,7 @@ def click_train(
     sr2,
     if_f0_3,
     use_d_vectors,
+    one_dv_per_speaker,
     use_se_loss,
     se_backprop,
     save_epoch10,
@@ -387,7 +388,7 @@ def click_train(
                     coarse_formants_dir.replace("\\", "\\\\"),
                     name,
                     d_vector_dir.replace("\\", "\\\\"),
-                    spk_id5,    #d-vectors have the format sid.npy
+                    spk_id5 if one_dv_per_speaker else name,    #d-vectors have the format sid.npy
                     spk_id5,
                 )
             )
@@ -476,8 +477,9 @@ def click_train(
 
 def main():
     use_d_vectors = True
+    one_dv_per_speaker = False
     use_se_loss = True
-    se_backprop = False
+    se_backprop = True
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
     exp_dir1 = "NUSR8E-formant-experiment-all" #Experiment name
     sr2 = "40k" #Target sample rate
@@ -521,6 +523,7 @@ def main():
         sr2,
         if_f0_3,
         use_d_vectors,
+        one_dv_per_speaker,
         use_se_loss,
         se_backprop,
         save_epoch10,

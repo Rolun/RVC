@@ -183,8 +183,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/NUSR8E-formant-experiment-all_se_forward_function_e250_s23500.pth" #merged3_e185_s8880.pth #NUSR8E-formant-experiment-all-backprop-fixed-dv_e250_s23500.pth #NUSR8E-formant-experiment-all-dv-reinitilize-dec-flow-2_e250_s23500.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/NJAT/07.wav"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/VCTK-se-loss-only_e155_s460505.pth" #merged3_e185_s8880.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/NJAT/07.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#
 f0method = "crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
 index_rate = 0.7
@@ -413,19 +413,19 @@ def calculate_pitch_diff(f0_1, f0_2):
 # generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=0.8, formant_to_shift=1, output_path=f"test_stuff/VCTK/formants_dv_mic1_e60_sid-sandro_sid0_f1_0.8.wav")
 
 # for i in range(12):
-#     generate(i, function="infer_sid", f0up_key=0, formant_shift=1, output_path=f"test_stuff/formant_test_encoder_all_se_formants_e250_sid-{i}.wav")
+    # generate(i, function="infer_sid", f0up_key=0, formant_shift=1, output_path=f"test_stuff/109-voices-{i}.wav")
 
 # for i in range(12):
 #     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all/4_d_vectors/{i}.npy")
 #     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_backprop_fixed_dv_e250_sid-{i}.wav")
 
 
-d_vector = get_d_vector_resemblyzer(f"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac", trained_se_path=trained_se_path)
-generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/formant_test_encoder_all_se_forward_function_e250-blacc-sos.wav")
+d_vector = get_d_vector_resemblyzer(f"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac", trained_se_path=trained_se_path)
+generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/VCTK-se-loss-only_e95-martin-hq-sandro.wav")
 
 # for i in range(0,10):
-#     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-formants-dv-mic1/4_d_vectors/{i}.npy")
-#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/VCTK/formants_dv_mic1_e60_sid-{i}.wav")
+#     d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-se-loss-only/4_d_vectors/{i}.npy")
+#     generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/VCTK-se-loss-only-e155-JLEE-sid-{i}.wav")
 
 # d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/VCTK-formants-dv-mic1/4_d_vectors/0.npy")
 # for i in range(0,5):

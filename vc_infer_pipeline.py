@@ -1157,14 +1157,14 @@ class VC(object):
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, sid)[0][0, 0])
+                        (net_g.infer(feats, p_len, pitch, pitchf, None, None, None, None, sid)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()
                     )
                 elif function == "infer_semb":
                     audio1 = (
-                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, semb)[0][0, 0])
+                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, None, None, None, None, semb)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()
