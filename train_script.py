@@ -478,8 +478,8 @@ def click_train(
 def main():
     use_d_vectors = True
     one_dv_per_speaker = False
-    use_se_loss = True
-    se_backprop = True
+    use_se_loss = False
+    se_backprop = False
     trainset_dir4 = "C:/Users/lundb/Documents/Other/Music/datasets/mixed_dataset" #"~/wav48_silence_trimmed"
     exp_dir1 = "NUSR8E-formant-experiment-all" #Experiment name
     sr2 = "40k" #Target sample rate
