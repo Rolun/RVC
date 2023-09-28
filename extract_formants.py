@@ -28,7 +28,7 @@ class FeatureInput(object):
         self.fs = samplerate
         self.hop = hop_size
 
-        self.formant_bin = 258 #About half of the reasonable max F4
+        self.formant_bin = 512 #About half of the reasonable max F4
         self.formant_max = 7500.0#5500.0 #Give some extra room for when we are scaling it
         self.formant_min = 50.0
         self.formant_mel_min = 1127 * np.log(1 + self.formant_min / 700)
