@@ -308,10 +308,10 @@ def run(rank, n_gpus, hps):
             # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
             #TODO: USE THESE FOR FORMANTS
-            # tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            # tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            # tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
-            # tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
@@ -600,7 +600,7 @@ def train_and_evaluate(
                     x_mask,
                     z_mask,
                     (z, z_p, m_p, logs_p, m_q, logs_q),
-                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, aux_input={"d_vectors": d_vector if hps.se_backprop else d_vector, "speaker_ids": sid}) #cf1, cf2, cf3, cf4,
+                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": d_vector if hps.se_backprop else d_vector, "speaker_ids": sid}) #
             else:
                 (
                     y_hat,
@@ -690,7 +690,7 @@ def train_and_evaluate(
 
                 logger.info([global_step, lr])
                 logger.info(
-                    f"loss_disc={loss_disc:.3f}, loss_gen={loss_gen:.3f}, loss_fm={loss_fm:.3f},loss_mel={loss_mel:.3f}, loss_kl={loss_kl:.3f}" + f", loss_se={loss_se:.3f}" if hps.use_se_loss else ""
+                    f"loss_disc={loss_disc:.3f}, loss_gen={loss_gen:.3f}, loss_fm={loss_fm:.3f},loss_mel={loss_mel:.3f}, loss_kl={loss_kl:.3f}" + (f", loss_se={loss_se:.3f}" if hps.use_se_loss else "")
                 )
                 scalar_dict = {
                     "loss/g/total": loss_gen_all,
