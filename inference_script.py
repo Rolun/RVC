@@ -8,6 +8,7 @@ from multiprocessing import cpu_count
 import numpy as np
 import time
 import json
+import faiss
 
 class Config:
     def __init__(self,device,is_half):
@@ -183,10 +184,10 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/VCTK-dv-many-per-speaker_e80_s237680.pth" #merged3_e185_s8880.pth
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/VCTK-formants-dv-mic1_e60_s178260.pth" #merged3_e185_s8880.pth
 input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/Martin_recordings/martin_hq.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/NJAT/07.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#
 f0method = "crepe"
-index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/sandro_sid/added_IVF777_Flat_nprobe_1_sandro_sid_v2.index"
+index_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/Small-index-test-for-dv/added_IVF777_Flat_nprobe_1_Small-index-test-for-dv_v2.index"
 index_rate = 0.7
 filter_radius = 3
 resample_sr = 0
@@ -401,8 +402,8 @@ def calculate_pitch_diff(f0_1, f0_2):
 # generate(d_vector5, function="infer_semb", output_path="test_stuff/test_5.wav")
 
 # original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/JLEE/05.wav"
-original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac"
-# original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"
+# original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-I_Need_A_Dollar.flac"
+original_singer_file = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"
 # f0_1 = get_average_pitch(original_singer_file)
 # f0_2 = get_average_pitch(input_path)
 # f_diff = calculate_pitch_diff(f0_2, f0_1)
@@ -410,7 +411,7 @@ f_diff=0
 print("f_diff: ", f_diff)
 d_vector = get_d_vector_resemblyzer(original_singer_file, trained_se_path=trained_se_path)
 # d_vector = np.load(f"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/NUSR8E-formant-experiment-all-512-formants/4_d_vectors/0.npy")
-generate(d_vector, function="infer_semb", f0up_key=f_diff, formant_shift=1, formant_to_shift=1, output_path=f"test_stuff/dv-tests/VCTK-dv-many-per-speaker_e80_aloe_sandro_dollar.wav")
+generate(d_vector, function="infer_semb", f0up_key=f_diff, formant_shift=1, formant_to_shift=0, output_path=f"test_stuff/dv-tests/VCTK-formants-dv-mic1_e60_sandro_refined_index.wav")
 
 # d_vector = get_d_vector_resemblyzer(f"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/JTAN/07.wav", trained_se_path=trained_se_path)
 # generate(d_vector, function="infer_semb", f0up_key=0, formant_shift=1, output_path=f"test_stuff/dv-tests/VCTK-coqui-setup_e45_JTAN.wav")

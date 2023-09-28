@@ -285,11 +285,11 @@ def train_index(exp_dir1, version19):
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
     infos = []
     infos.append("%s,%s" % (big_npy.shape, n_ivf))
-    yield "\n".join(infos)
+    print("\n".join(infos))
     index = faiss.index_factory(256 if version19 == "v1" else 768, "IVF%s,Flat" % n_ivf)
     # index = faiss.index_factory(256if version19=="v1"else 768, "IVF%s,PQ128x4fs,RFlat"%n_ivf)
     infos.append("training")
-    yield "\n".join(infos)
+    print("\n".join(infos))
     index_ivf = faiss.extract_index_ivf(index)  #
     index_ivf.nprobe = 1
     index.train(big_npy)
@@ -300,7 +300,7 @@ def train_index(exp_dir1, version19):
     )
     # faiss.write_index(index, '%s/trained_IVF%s_Flat_FastScan_%s.index'%(exp_dir,n_ivf,version19))
     infos.append("adding")
-    yield "\n".join(infos)
+    print("\n".join(infos))
     batch_size_add = 8192
     for i in range(0, big_npy.shape[0], batch_size_add):
         index.add(big_npy[i : i + batch_size_add])
@@ -315,7 +315,7 @@ def train_index(exp_dir1, version19):
     )
     # faiss.write_index(index, '%s/added_IVF%s_Flat_FastScan_%s.index'%(exp_dir,n_ivf,version19))
     # infos.append("成功构建索引，added_IVF%s_Flat_FastScan_%s.index"%(n_ivf,version19))
-    yield "\n".join(infos)
+    print("\n".join(infos))
 
 def click_train(
     exp_dir1,
@@ -498,7 +498,7 @@ def main():
     if_save_every_weights18 = True #Save a small final model to the 'weights' folder at each save point
     version19 = "v2" #v1 or v2
     extraction_crepe_hop_length = 64
-    pattern="mic1" #We don't want to capture directional data, so mic1 might be better
+    pattern=""#"mic1" #We don't want to capture directional data, so mic1 might be better
 
     # preprocess_dataset(
     #     trainset_dir4, 
@@ -510,9 +510,9 @@ def main():
 
     # print("preprocess done")
 
-    # extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
+    extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
 
-    # print("feature extraction done")
+    print("feature extraction done")
 
     # train_index(exp_dir1, version19)
 
