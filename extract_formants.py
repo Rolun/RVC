@@ -28,11 +28,29 @@ class FeatureInput(object):
         self.fs = samplerate
         self.hop = hop_size
 
-        self.formant_bin = 512 #About half of the reasonable max F4
-        self.formant_max = 7500.0#5500.0 #Give some extra room for when we are scaling it
-        self.formant_min = 50.0
-        self.formant_mel_min = 1127 * np.log(1 + self.formant_min / 700)
-        self.formant_mel_max = 1127 * np.log(1 + self.formant_max / 700)
+        self.formant_bin = 512
+        self.formant_limits = {
+            1: {
+                "max": 80.0,
+                "min": 1000.0
+            },
+            2: {
+                "max": 500.0,
+                "min": 4000.0
+            },
+            3: {
+                "max": 1000.0,
+                "min": 5000.0
+            },
+            4: {
+                "max": 2000.0,
+                "min": 7000.0
+            },
+            5: {
+                "max": 4000.0,
+                "min": 8000.0
+            },
+        }
 
     def get_formant_values(self, formant_obj, track, p_len=None):
         formant_values = []
@@ -79,15 +97,19 @@ class FeatureInput(object):
         f4 = self.get_formant_values(formant, 4, p_len)
         f5 = self.get_formant_values(formant, 5, p_len)
 
-        # import pdb; pdb.set_trace()
-
         return f1, f2, f3, f4, f5
     
-    def coarse_formant(self, fN):
+    def coarse_formant(self, fN, N):
+        formant_min = self.formant_limits[N]["min"]
+        formant_max = self.formant_limits[N]["max"]
+
+        formant_mel_min = 1127 * np.log(1 + formant_min / 700)
+        formant_mel_max = 1127 * np.log(1 + formant_max / 700)
+
         formant_mel = 1127 * np.log(1 + fN / 700)
-        formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - self.formant_mel_min) * (
+        formant_mel[formant_mel > 0] = (formant_mel[formant_mel > 0] - formant_mel_min) * (
             self.formant_bin - 2
-        ) / (self.formant_mel_max - self.formant_mel_min) + 1
+        ) / (formant_mel_max - formant_mel_min) + 1
 
         # use 0 or 1
         formant_mel[formant_mel <= 1] = 1
@@ -119,7 +141,7 @@ class FeatureInput(object):
                         featur_pit,
                         allow_pickle=False,
                     )
-                    coarse_pit = [self.coarse_formant(fN) for fN in featur_pit]
+                    coarse_pit = [self.coarse_formant(fN, idx+1) for idx, fN in enumerate(featur_pit)]
                     np.save(
                         coarse_formants_path,
                         coarse_pit,
