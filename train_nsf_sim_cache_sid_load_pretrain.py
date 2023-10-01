@@ -14,7 +14,7 @@ import traceback, json, argparse, itertools, math, torch, pdb
 import numpy as np
 from resemblyzer import VoiceEncoder, preprocess_wav
 
-NUMBER_OF_SPEAKERS = 12#109
+NUMBER_OF_SPEAKERS = 109
 
 def get_d_vector_resemblyzer(wav, encoder):
     embeddings = []

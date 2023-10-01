@@ -243,10 +243,34 @@ class VC(object):
             f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
         return f0_median_hybrid
 
-    def coarse_formant(self, fN):
-        formant_bin = 256
-        formant_max = 5500.0
-        formant_min = 50.0
+    def coarse_formant(self, fN, N):
+        formant_bin = 512
+        formant_limits = {
+            1: {
+                "max": 80.0,
+                "min": 1000.0
+            },
+            2: {
+                "max": 500.0,
+                "min": 4000.0
+            },
+            3: {
+                "max": 1000.0,
+                "min": 5000.0
+            },
+            4: {
+                "max": 2000.0,
+                "min": 7000.0
+            },
+            5: {
+                "max": 4000.0,
+                "min": 8000.0
+            },
+        }
+
+        formant_min = formant_limits[N]["min"]
+        formant_max = formant_limits[N]["max"]
+
         formant_mel_min = 1127 * np.log(1 + formant_min / 700)
         formant_mel_max = 1127 * np.log(1 + formant_max / 700)
 
@@ -329,11 +353,11 @@ class VC(object):
         elif formant_to_shift==5:
             f5*=formant_shift
 
-        cf1 = self.coarse_formant(f1)
-        cf2 = self.coarse_formant(f2)
-        cf3 = self.coarse_formant(f3)
-        cf4 = self.coarse_formant(f4)
-        cf5 = self.coarse_formant(f5)
+        cf1 = self.coarse_formant(f1, 1)
+        cf2 = self.coarse_formant(f2, 2)
+        cf3 = self.coarse_formant(f3, 3)
+        cf4 = self.coarse_formant(f4, 4)
+        cf5 = self.coarse_formant(f5, 5)
 
         return (f1, f2, f3, f4, f5, cf1, cf2, cf3, cf4, cf5)
 
@@ -1164,7 +1188,7 @@ class VC(object):
                     )
                 elif function == "infer_semb":
                     audio1 = (
-                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, None, None, None, None, semb)[0][0, 0])
+                        (net_g.infer_using_sembedding(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, semb)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()

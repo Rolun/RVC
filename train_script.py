@@ -476,7 +476,7 @@ def click_train(
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
 def main():
-    use_d_vectors = True
+    use_d_vectors = False
     one_dv_per_speaker = False
     use_se_loss = False
     se_backprop = False
@@ -491,8 +491,8 @@ def main():
     total_epoch11 = 1#250 #Total epochs
     batch_size12 = 16 #Batch size
     if_save_latest13 = False #Save only the latest .ckpt file
-    pretrained_G14 = "pretrained_v2/f0G40k.pth"
-    pretrained_D15 = "pretrained_v2/f0D40k.pth"
+    pretrained_G14 = ""#"pretrained_v2/f0G40k.pth"
+    pretrained_D15 = ""#"pretrained_v2/f0D40k.pth"
     gpus6 = gpus16 = "0" #Enter the GPU index(es) separated by '-', e.g., 0-1-2 to use GPU 0, 1, and 2
     if_cache_gpu17 = False #Cache all training sets to GPU memory
     if_save_every_weights18 = True #Save a small final model to the 'weights' folder at each save point
@@ -510,9 +510,9 @@ def main():
 
     # print("preprocess done")
 
-    extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
+    # extract_feature(gpus6, np7, f0method8, if_f0_3, use_d_vectors, exp_dir1, version19, extraction_crepe_hop_length)
 
-    print("feature extraction done")
+    # print("feature extraction done")
 
     # train_index(exp_dir1, version19)
 
