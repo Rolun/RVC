@@ -84,7 +84,7 @@ class TextEncoder768(nn.Module):
         self.p_dropout = p_dropout
         self.emb_phone = nn.Linear(768, hidden_channels)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
-        # self.catter = nn.Linear(6*hidden_channels, hidden_channels)
+        self.catter = nn.Linear(6*hidden_channels, hidden_channels)
         if f0 == True:
             self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
             self.emb_formant1 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
@@ -97,22 +97,22 @@ class TextEncoder768(nn.Module):
         self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(self, phone, pitch, lengths, coarse_formants = (None,None,None,None)):
-        if pitch == None:
-            x = self.emb_phone(phone)
-        else:
-            x = self.emb_phone(phone) + self.emb_pitch(pitch)
+        # if pitch == None:
+        #     x = self.emb_phone(phone)
+        # else:
+        #     x = self.emb_phone(phone) + self.emb_pitch(pitch)
 
-        if coarse_formants[0] != None:
-            x = x + self.emb_formant1(coarse_formants[0]) + self.emb_formant2(coarse_formants[1]) + self.emb_formant3(coarse_formants[2]) + self.emb_formant4(coarse_formants[3])
+        # if coarse_formants[0] != None:
+        #     x = x + self.emb_formant1(coarse_formants[0]) + self.emb_formant2(coarse_formants[1]) + self.emb_formant3(coarse_formants[2]) + self.emb_formant4(coarse_formants[3])
 
-        # catted = torch.cat((self.emb_phone(phone), 
-        #                     self.emb_pitch(pitch),
-        #                     self.emb_formant1(coarse_formants[0]),
-        #                     self.emb_formant2(coarse_formants[1]),
-        #                     self.emb_formant3(coarse_formants[2]),
-        #                     self.emb_formant4(coarse_formants[3])),
-        #                     dim=-1)
-        # new_x = self.catter(catted)
+        catted = torch.cat((self.emb_phone(phone), 
+                            self.emb_pitch(pitch),
+                            self.emb_formant1(coarse_formants[0]),
+                            self.emb_formant2(coarse_formants[1]),
+                            self.emb_formant3(coarse_formants[2]),
+                            self.emb_formant4(coarse_formants[3])),
+                            dim=-1)
+        x = self.catter(catted)
 
         x = x * math.sqrt(self.hidden_channels)  # [b, t, h]
         x = self.lrelu(x)
