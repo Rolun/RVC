@@ -1176,12 +1176,12 @@ class VC(object):
             feats = feats * pitchff + feats0 * (1 - pitchff)
             feats = feats.to(feats0.dtype)
         p_len = torch.tensor([p_len], device=self.device).long()
-
+        import pdb; pdb.set_trace()
         with torch.no_grad():
             if pitch != None and pitchf != None:
                 if function == "infer_sid":
                     audio1 = (
-                        (net_g.infer(feats, p_len, pitch, pitchf, None, None, None, None, sid)[0][0, 0])
+                        (net_g.infer(feats, p_len, pitch, pitchf, cf1, cf2, cf3, cf4, sid)[0][0, 0])
                         .data.cpu()
                         .float()
                         .numpy()
