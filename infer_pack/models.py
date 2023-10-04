@@ -90,7 +90,7 @@ class TextEncoder768(nn.Module):
             self.emb_formant1 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
             self.emb_formant2 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
             self.emb_formant3 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
-            # self.emb_formant4 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
+            self.emb_formant4 = nn.Embedding(512, hidden_channels) #nn.Linear(1, hidden_channels)
         self.encoder = attentions.Encoder(
             hidden_channels, filter_channels, n_heads, n_layers, kernel_size, p_dropout
         )
@@ -103,7 +103,7 @@ class TextEncoder768(nn.Module):
             x = self.emb_phone(phone) + self.emb_pitch(pitch)
 
         if coarse_formants[0] != None:
-            x = x + self.emb_formant1(coarse_formants[0]) + self.emb_formant2(coarse_formants[1]) + self.emb_formant3(coarse_formants[2]) #+ self.emb_formant4(coarse_formants[3])
+            x = x + self.emb_formant1(coarse_formants[0]) + self.emb_formant2(coarse_formants[1]) + self.emb_formant3(coarse_formants[2]) + self.emb_formant4(coarse_formants[3])
 
         # catted = torch.cat((self.emb_phone(phone), 
         #                     self.emb_pitch(pitch),
@@ -877,17 +877,18 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.enc_q.remove_weight_norm()
 
     def forward(
-        self, phone, phone_lengths, pitch, pitchf, y, y_lengths, cf1, cf2, cf3, aux_input={"d_vectors": None, "speaker_ids": None}, #
+        self, phone, phone_lengths, pitch, pitchf, y, y_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": None, "speaker_ids": None}, #
     ):
         cf1[pitch==1]=1
         cf2[pitch==1]=1
         cf3[pitch==1]=1
+        cf4[pitch==1]=1
 
         sid, g, = self._set_cond_input(aux_input)
         if not self.use_d_vectors:
             g = self.emb_g(sid).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
 
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(cf1,cf2,cf3)) #
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(cf1,cf2,cf3,cf4)) #
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
         z_slice, ids_slice = commons.rand_slice_segments(
@@ -904,9 +905,9 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
 
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    def infer(self, phone, phone_lengths, pitch, nsff0, f1, f2, f3, f4, sid, max_len=None):
+    def infer(self, phone, phone_lengths, pitch, nsff0, f1, f2, f3, sid, max_len=None):
         g = self.emb_g(sid).unsqueeze(-1)
-        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(f1,f2,f3,f4))
+        m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths, coarse_formants=(f1,f2,f3))
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
         o = self.dec((z * x_mask)[:, :, :max_len], nsff0, g=g)

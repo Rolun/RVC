@@ -491,8 +491,8 @@ def main():
     total_epoch11 = 1#250 #Total epochs
     batch_size12 = 16 #Batch size
     if_save_latest13 = False #Save only the latest .ckpt file
-    pretrained_G14 = ""#"pretrained_v2/f0G40k.pth"
-    pretrained_D15 = ""#"pretrained_v2/f0D40k.pth"
+    pretrained_G14 = "pretrained_v2/f0G40k.pth"
+    pretrained_D15 = "pretrained_v2/f0D40k.pth"
     gpus6 = gpus16 = "0" #Enter the GPU index(es) separated by '-', e.g., 0-1-2 to use GPU 0, 1, and 2
     if_cache_gpu17 = False #Cache all training sets to GPU memory
     if_save_every_weights18 = True #Save a small final model to the 'weights' folder at each save point

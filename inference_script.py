@@ -184,8 +184,8 @@ def get_vc(model_path, device_config, is_half, use_d_vector = False):
 
 device = "cuda:0"
 is_half = True
-model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/VCTK-sid-individual-formants-288-hidden_e10_s29710.pth" #merged3_e185_s8880.pth
-input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac"#"C:/Users/lundb/Documents/Other/Music/datasets/NUS48E/NJAT/07.wav"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#
+model_path = "C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/weights/VCTK-sid-adding-formants-without-4th_e70_s207970.pth" #merged3_e185_s8880.pth
+input_path = "C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/sandro_multiple_refined/Track 1_refined.flac"#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/test_stuff/formant_test_short_baseline.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/Multi-speaker-training/aloe_blacc-refined/Aloe-Blacc-SOS.flac"#"C:/Users/lundb/Documents/Other/Music/i.wav"#"C:/Users/lundb/Documents/Other/Music/datasets/clean_singer/JLEE/08.wav"#
 f0method = "crepe"
 index_path = ""#"C:/Users/lundb/Documents/Other/Music/RVC-beta/RVC-beta-v2-0528/logs/Small-index-test-for-dv/added_IVF777_Flat_nprobe_1_Small-index-test-for-dv_v2.index"
 index_rate = 0.7
@@ -441,16 +441,16 @@ def calculate_pitch_diff(f0_1, f0_2):
 # generate(d_vector, function="infer_semb", f0up_key=-8, formant_shift=0.8, formant_to_shift=0, output_path=f"test_stuff/VCTK/VCTK-dv-many-per-speaker-individual-formants_e55_f-8_0.8-sid-0.wav")
 # generate(d_vector, function="infer_semb", f0up_key=+8, formant_shift=1.2, formant_to_shift=0, output_path=f"test_stuff/VCTK/VCTK-dv-many-per-speaker-individual-formants_e55_f+8_1.2-sid-0.wav")
 
-generate(0, function="infer_sid", f0up_key=0, formant_shift=1, output_path="test_stuff/VCTK-sid-individual-formants-288-hidden_e10-sid0-sandro.wav")
+# generate(0, function="infer_sid", f0up_key=0, formant_shift=1, output_path="test_stuff/VCTK/VCTK-sid-adding-formants-without-4th_e70-sid0-sandro.wav")
 
 # generate(0, function="infer_sid", f0up_key=0, formant_shift=1, output_path=f"test_stuff/sandro_sining_dollar_no_index.wav")
 
-# for i in range(0,5):
-#     generate(1, function="infer_sid", f0up_key=0, formant_shift=0.7, formant_to_shift=i, output_path=f"test_stuff/VCTK/VCTK-sid-feature-network_e50_f{i}-0.7-sid1.wav")
-#     generate(1, function="infer_sid", f0up_key=0, formant_shift=1.3, formant_to_shift=i, output_path=f"test_stuff/VCTK/VCTK-sid-feature-network_e50_f{i}-1.3-sid1.wav")
+# for i in range(0,4):
+#     generate(1, function="infer_sid", f0up_key=0, formant_shift=0.7, formant_to_shift=i, output_path=f"test_stuff/VCTK/VCTK-sid-adding-formants-without-4th_e70_f{i}-0.7-sid1.wav")
+#     generate(1, function="infer_sid", f0up_key=0, formant_shift=1.3, formant_to_shift=i, output_path=f"test_stuff/VCTK/VCTK-sid-adding-formants-without-4th_e70_f{i}-1.3-sid1.wav")
 
-# generate(0, function="infer_sid", f0up_key=-8, formant_shift=0.8, formant_to_shift=0, output_path=f"test_stuff/VCTK/VCTK-sid-feature-network_e50_f-8_0.8-sid-0.wav")
-# generate(0, function="infer_sid", f0up_key=+8, formant_shift=1.2, formant_to_shift=0, output_path=f"test_stuff/VCTK/VCTK-sid-feature-network_e50_f+8_1.2-sid-0.wav")
+generate(0, function="infer_sid", f0up_key=-8, formant_shift=0.8, formant_to_shift=0, output_path=f"test_stuff/VCTK/VCTK-sid-adding-formants-without-4th_e70-sid0-sandro_f-8_0.8.wav")
+generate(0, function="infer_sid", f0up_key=+8, formant_shift=1.2, formant_to_shift=0, output_path=f"test_stuff/VCTK/VCTK-sid-adding-formants-without-4th_e70-sid0-sandro_f+8_1.2.wav")
 
 # o_semb = np.load("embeddings/1_emb.npy")
 # gen_semb = np.expand_dims(np.load("VAE/generated_emb_1.npy"),-1)

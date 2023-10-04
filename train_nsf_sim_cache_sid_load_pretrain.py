@@ -243,75 +243,75 @@ def run(rank, n_gpus, hps):
             if rank == 0:
                 logger.info("loaded pretrained %s" % (hps.pretrainG))
             tmp = torch.load(hps.pretrainG, map_location="cpu")["model"]
-            # if hps.use_d_vectors:
-            #     del tmp['emb_g.weight']
-            #     tmpcond = nn.Conv1d(hps.model.gin_channels, hps.model.upsample_initial_channel, 1)
-            #     tmp['dec.cond.weight'] = tmpcond.weight.data
-            #     tmp['dec.cond.bias'] = tmpcond.bias.data
+            if hps.use_d_vectors:
+                del tmp['emb_g.weight']
+                tmpcond = nn.Conv1d(hps.model.gin_channels, hps.model.upsample_initial_channel, 1)
+                tmp['dec.cond.weight'] = tmpcond.weight.data
+                tmp['dec.cond.bias'] = tmpcond.bias.data
 
-            #     for i in range(4):
-            #         cond_layer = torch.nn.Conv1d(
-            #             hps.model.gin_channels, 2 * hps.model.hidden_channels * 3, 1
+                for i in range(4):
+                    cond_layer = torch.nn.Conv1d(
+                        hps.model.gin_channels, 2 * hps.model.hidden_channels * 3, 1
+                    )
+                    tmp_cond_layer = torch.nn.utils.weight_norm(cond_layer, name="weight")
+                    tmp[f"flow.flows.{i*2}.enc.cond_layer.weight_v"] = tmp_cond_layer.weight_v.data
+                    tmp[f"flow.flows.{i*2}.enc.cond_layer.weight_g"] = tmp_cond_layer.weight_g.data
+                    tmp[f"flow.flows.{i*2}.enc.cond_layer.bias"] = tmp_cond_layer.bias.data
+
+                # tmp["emb_g.weight"] = nn.Conv1d(256, 256, 1).weight.data
+                # tmp["emb_g.bias"] = nn.Conv1d(256, 256, 1).bias.data
+                # tmplin = nn.Linear(256, 256)
+                # tmp["emb_g.weight"] = tmplin.weight.data
+                # tmp["emb_g.bias"] = tmplin.bias.data
+            else:
+                tmp["emb_g.weight"] = nn.Embedding(NUMBER_OF_SPEAKERS, 256).weight.data
+
+            # Formant Convs for the generator
+            # formant_convs = nn.ModuleList()
+            # for i, (u, k) in enumerate(zip(hps.model.upsample_rates, hps.model.upsample_kernel_sizes)):
+            #     c_cur = hps.model.upsample_initial_channel // (2 ** (i + 1))
+            #     if i + 1 < len(hps.model.upsample_rates):
+            #         stride_f0 = np.prod(hps.model.upsample_rates[i + 1 :])
+            #         formant_convs.append(
+            #             nn.Conv1d(
+            #                 1,
+            #                 c_cur,
+            #                 kernel_size=stride_f0 * 2,
+            #                 stride=stride_f0,
+            #                 padding=stride_f0 // 2,
+            #             )
             #         )
-            #         tmp_cond_layer = torch.nn.utils.weight_norm(cond_layer, name="weight")
-            #         tmp[f"flow.flows.{i*2}.enc.cond_layer.weight_v"] = tmp_cond_layer.weight_v.data
-            #         tmp[f"flow.flows.{i*2}.enc.cond_layer.weight_g"] = tmp_cond_layer.weight_g.data
-            #         tmp[f"flow.flows.{i*2}.enc.cond_layer.bias"] = tmp_cond_layer.bias.data
+            #     else:
+            #         formant_convs.append(nn.Conv1d(1, c_cur, kernel_size=1))
+            # tmp["dec.formant_convs.0.weight"] = formant_convs[0].weight.data
+            # tmp["dec.formant_convs.0.bias"] = formant_convs[0].bias.data
+            # tmp["dec.formant_convs.1.weight"] = formant_convs[1].weight.data
+            # tmp["dec.formant_convs.1.bias"] = formant_convs[1].bias.data
+            # tmp["dec.formant_convs.2.weight"] = formant_convs[2].weight.data
+            # tmp["dec.formant_convs.2.bias"] = formant_convs[2].bias.data
+            # tmp["dec.formant_convs.3.weight"] = formant_convs[3].weight.data
+            # tmp["dec.formant_convs.3.bias"] = formant_convs[3].bias.data
 
-            #     # tmp["emb_g.weight"] = nn.Conv1d(256, 256, 1).weight.data
-            #     # tmp["emb_g.bias"] = nn.Conv1d(256, 256, 1).bias.data
-            #     # tmplin = nn.Linear(256, 256)
-            #     # tmp["emb_g.weight"] = tmplin.weight.data
-            #     # tmp["emb_g.bias"] = tmplin.bias.data
-            # else:
-            #     tmp["emb_g.weight"] = nn.Embedding(NUMBER_OF_SPEAKERS, 256).weight.data
-
-            # # Formant Convs for the generator
-            # # formant_convs = nn.ModuleList()
-            # # for i, (u, k) in enumerate(zip(hps.model.upsample_rates, hps.model.upsample_kernel_sizes)):
-            # #     c_cur = hps.model.upsample_initial_channel // (2 ** (i + 1))
-            # #     if i + 1 < len(hps.model.upsample_rates):
-            # #         stride_f0 = np.prod(hps.model.upsample_rates[i + 1 :])
-            # #         formant_convs.append(
-            # #             nn.Conv1d(
-            # #                 1,
-            # #                 c_cur,
-            # #                 kernel_size=stride_f0 * 2,
-            # #                 stride=stride_f0,
-            # #                 padding=stride_f0 // 2,
-            # #             )
-            # #         )
-            # #     else:
-            # #         formant_convs.append(nn.Conv1d(1, c_cur, kernel_size=1))
-            # # tmp["dec.formant_convs.0.weight"] = formant_convs[0].weight.data
-            # # tmp["dec.formant_convs.0.bias"] = formant_convs[0].bias.data
-            # # tmp["dec.formant_convs.1.weight"] = formant_convs[1].weight.data
-            # # tmp["dec.formant_convs.1.bias"] = formant_convs[1].bias.data
-            # # tmp["dec.formant_convs.2.weight"] = formant_convs[2].weight.data
-            # # tmp["dec.formant_convs.2.bias"] = formant_convs[2].bias.data
-            # # tmp["dec.formant_convs.3.weight"] = formant_convs[3].weight.data
-            # # tmp["dec.formant_convs.3.bias"] = formant_convs[3].bias.data
-
-            # # Formant hidden layers for the text encoder
+            # Formant hidden layers for the text encoder
             
-            # # tmplin1 = nn.Linear(1, hps.model.hidden_channels)
-            # # tmplin2 = nn.Linear(1, hps.model.hidden_channels)
-            # # tmplin3 = nn.Linear(1, hps.model.hidden_channels)
-            # # tmplin4 = nn.Linear(1, hps.model.hidden_channels)
-            # # tmp["enc_p.emb_formant1.weight"] = tmplin1.weight.data
-            # # tmp["enc_p.emb_formant1.bias"] = tmplin1.bias.data
-            # # tmp["enc_p.emb_formant2.weight"] = tmplin2.weight.data
-            # # tmp["enc_p.emb_formant2.bias"] = tmplin2.bias.data
-            # # tmp["enc_p.emb_formant3.weight"] = tmplin3.weight.data
-            # # tmp["enc_p.emb_formant3.bias"] = tmplin3.bias.data
-            # # tmp["enc_p.emb_formant4.weight"] = tmplin4.weight.data
-            # # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
+            # tmplin1 = nn.Linear(1, hps.model.hidden_channels)
+            # tmplin2 = nn.Linear(1, hps.model.hidden_channels)
+            # tmplin3 = nn.Linear(1, hps.model.hidden_channels)
+            # tmplin4 = nn.Linear(1, hps.model.hidden_channels)
+            # tmp["enc_p.emb_formant1.weight"] = tmplin1.weight.data
+            # tmp["enc_p.emb_formant1.bias"] = tmplin1.bias.data
+            # tmp["enc_p.emb_formant2.weight"] = tmplin2.weight.data
+            # tmp["enc_p.emb_formant2.bias"] = tmplin2.bias.data
+            # tmp["enc_p.emb_formant3.weight"] = tmplin3.weight.data
+            # tmp["enc_p.emb_formant3.bias"] = tmplin3.bias.data
+            # tmp["enc_p.emb_formant4.weight"] = tmplin4.weight.data
+            # tmp["enc_p.emb_formant4.bias"] = tmplin4.bias.data
 
-            # #TODO: USE THESE FOR FORMANTS
-            # tmp["enc_p.emb_formant1.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
-            # tmp["enc_p.emb_formant2.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
-            # tmp["enc_p.emb_formant3.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
-            # tmp["enc_p.emb_formant4.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            #TODO: USE THESE FOR FORMANTS
+            tmp["enc_p.emb_formant1.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant2.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant3.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
+            tmp["enc_p.emb_formant4.weight"] = nn.Embedding(512, hps.model.hidden_channels).weight.data
 
             # tmp["enc_p.emb_formant5.weight"] = nn.Embedding(256, hps.model.hidden_channels).weight.data
 
@@ -600,7 +600,7 @@ def train_and_evaluate(
                     x_mask,
                     z_mask,
                     (z, z_p, m_p, logs_p, m_q, logs_q),
-                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, aux_input={"d_vectors": d_vector if hps.se_backprop else d_vector, "speaker_ids": sid}) #
+                ) = net_g(phone, phone_lengths, pitch, pitchf, spec, spec_lengths, cf1, cf2, cf3, cf4, aux_input={"d_vectors": d_vector if hps.se_backprop else d_vector, "speaker_ids": sid}) #
             else:
                 (
                     y_hat,
@@ -638,6 +638,7 @@ def train_and_evaluate(
             )  # slice
 
             # Discriminator
+            assert not y_hat.isnan().any()
             y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
             with autocast(enabled=False):
                 loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
